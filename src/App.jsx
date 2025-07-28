@@ -1,35 +1,47 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
+import { Routes, Route } from 'react-router-dom';
+import Layout from '@/components/layout/Layout';
+import Dashboard from '@/sections/Dashboard';
+import useSection from '@/hooks/useSection';
+import Employees from '@/sections/Employees';
+import Tasks from '@/sections/Tasks';
+import Chats from '@/sections/Chats';
+import Attendance from '@/sections/Attendance';
+import Reports from '@/sections/Reports';
+import Teams from '@/sections/Teams';
+import AdminPanel from '@/sections/AdminPanel';
 function App() {
-  const [count, setCount] = useState(0)
+  const { section } = useSection();
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        {section === 'dashboard' && (
+          <Route index element={<Dashboard />} /> 
+        )}
+        {section === 'employees' && (
+          <Route index element={<Employees />} /> 
+        )}
+        {section === 'tasks' && (
+          <Route index element={<Tasks />} /> 
+        )}
+        {section === 'chat' && (
+          <Route index element={<Chats />} /> 
+        )}
+        {section === 'attendance' && (
+          <Route index element={<Attendance />} /> 
+        )}
+        {section === 'reports' && (
+          <Route index element={<Reports />} /> 
+        )}
+        {section === 'teams' && (
+          <Route index element={<Teams />} /> 
+        )}
+        {section === 'admin' && (
+          <Route index element={<AdminPanel />} /> 
+        )}
+      </Route>
+    </Routes>
+  );
 }
 
-export default App
+export default App;
