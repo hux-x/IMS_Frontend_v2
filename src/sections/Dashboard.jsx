@@ -57,7 +57,7 @@ const Dashboard = () => {
   return (
     <div>
       <SectionHeader
-        title="Welcome back, Hasnain!"
+        title="Welcome back, Hasnain and Saud ma bhi sath sath kam ker raha houn ai smaj !"
         subtitle="Here's what's happening with your work today."
       />
 
