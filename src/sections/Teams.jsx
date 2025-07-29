@@ -47,7 +47,7 @@ const MOCK_TEAMS = [
     }
 ];
 
-const TeamManagementPage = () => {
+const Teams = () => {
     const [teams, setTeams] = useState(MOCK_TEAMS);
     const [filteredTeams, setFilteredTeams] = useState(MOCK_TEAMS);
     const [searchTerm, setSearchTerm] = useState('');
@@ -149,4 +149,4 @@ const TeamManagementPage = () => {
     );
 };
 
-export default TeamManagementPage;
+export default Teams;
