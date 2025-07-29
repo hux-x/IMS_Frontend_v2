@@ -1,8 +1,8 @@
 // src/pages/TeamManagementPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import TeamCard from '../components/team/TeamCard';
-import CreateTeamModal from '../components/team/CreateTeamModal';
-import TeamDetailsModal from '../components/team/TeamDetailsModal';
+import TeamCard from '../components/cards/TeamCard';
+import CreateTeamModal from '../components/ui/CreateTeamModal';
+import TeamDetailsModal from '../components/ui/TeamDetailsModal';
 import { FaPlus } from 'react-icons/fa';
 
 // Mock Data for Users and Teams
