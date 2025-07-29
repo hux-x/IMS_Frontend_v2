@@ -1,13 +1,13 @@
 // File: src/sections/Tasks.jsx
 import React, { useState } from 'react';
-import TaskCard from '../components/cards/TaskCard'; // ✅ Make sure path is correct
+import TaskCard from '../components/cards/TaskCard';
+import CreateTask from '../components/ui/createTask'; // Add this import
 
 const Tasks = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
-
-  // ✅ Tasks array — now includes items and files for full UI logic
-  const tasks = [
+  const [showCreateTask, setShowCreateTask] = useState(false); // Add this state
+  const [tasks, setTasks] = useState([ // Change to state so we can update it
     {
       id: 1,
       title: "Implement User Authentication",
@@ -44,21 +44,35 @@ const Tasks = () => {
       items: 2,
       files: 0
     }
-  ];
+  ]);
 
-  // 🔍 Apply filters
   const filteredTasks = tasks.filter((task) => {
-    const matchStatus = statusFilter === 'All' || task.status === statusFilter;
-    const matchPriority = priorityFilter === 'All' || task.priority === priorityFilter;
+    const matchStatus = statusFilter === 'All' || task.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchPriority = priorityFilter === 'All' || task.priority.toLowerCase() === priorityFilter.toLowerCase();
     return matchStatus && matchPriority;
   });
+
+  const handleCreateTask = (newTask) => {
+    const newTaskWithId = {
+      ...newTask,
+      id: tasks.length + 1,
+      dueDate: newTask.deadline,
+      priority: newTask.priority.toLowerCase(),
+      status: newTask.status.toLowerCase(),
+      files: newTask.files.length
+    };
+    setTasks([...tasks, newTaskWithId]);
+  };
 
   return (
     <div className="p-6">
       {/* Top Bar */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Task Management</h2>
-        <button className="bg-black text-white px-4 py-2 rounded hover:opacity-90">
+        <button 
+          onClick={() => setShowCreateTask(true)}
+          className="bg-black text-white px-4 py-2 rounded hover:opacity-90"
+        >
           + Create Task
         </button>
       </div>
@@ -94,6 +108,14 @@ const Tasks = () => {
           <TaskCard key={task.id} task={task} />
         ))}
       </div>
+
+      {/* Create Task Modal */}
+      {showCreateTask && (
+        <CreateTask 
+          onClose={() => setShowCreateTask(false)}
+          onCreate={handleCreateTask}
+        />
+      )}
     </div>
   );
 };
