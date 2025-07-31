@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { X, Check, Plus, Paperclip } from 'lucide-react';
 
-const CreateTask = ({ onClose, onCreate }) => {
+const CreateTask = ({ onClose, onCreate,isOpen }) => {
   const [taskData, setTaskData] = useState({
     title: '',
     description: '',
@@ -55,7 +55,7 @@ const CreateTask = ({ onClose, onCreate }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50"style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl transition-all duration-300 border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200">

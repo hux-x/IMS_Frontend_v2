@@ -202,7 +202,7 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
     );
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-8 transform transition-all duration-300 scale-100 opacity-100 max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center pb-4 border-b border-gray-200 mb-6">
                     <div className="flex items-center space-x-3">

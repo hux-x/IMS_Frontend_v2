@@ -53,7 +53,7 @@ const CreateTeamModal = ({ isOpen, onClose, onCreateTeam, allUsers }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
             <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-8 transform transition-all duration-300 scale-100 opacity-100">
                 <div className="flex justify-between items-center pb-4 border-b border-gray-200">
                     <h2 className="text-2xl font-semibold text-gray-800">Create New Team</h2>

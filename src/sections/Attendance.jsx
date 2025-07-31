@@ -1,8 +1,8 @@
 // src/components/AttendanceSection.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from '../components/layout/attendence_header';
-import AttendanceControls from '../components/cards/AttendanceControls';
-import EmployeeAttendanceList from '../components/layout/EmployeeAttendanceList';
+import Header from '@/components/layout/attendence_header';
+import AttendanceControls from '@/components/cards/AttendanceControls';
+import EmployeeAttendanceList from '@/components/layout/EmployeeAttendanceList';
 
 const initialEmployees = [
     { id: 1, name: 'John Admin', email: 'admin@company.com', checkIn: 'N/A', checkOut: 'N/A', status: 'Absent' },

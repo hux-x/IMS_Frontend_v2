@@ -1,13 +1,14 @@
 // File: src/sections/Tasks.jsx
 import React, { useState } from 'react';
-import TaskCard from '../components/cards/TaskCard';
-import CreateTask from '../components/ui/createTask'; // Add this import
+import TaskCard from '@/components/cards/TaskCard';
+import CreateTask from '@/components/modals/createTask';
+import ReactDOM from 'react-dom';
 
 const Tasks = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [priorityFilter, setPriorityFilter] = useState('All');
-  const [showCreateTask, setShowCreateTask] = useState(false); // Add this state
-  const [tasks, setTasks] = useState([ // Change to state so we can update it
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [tasks, setTasks] = useState([
     {
       id: 1,
       title: "Implement User Authentication",
