@@ -78,7 +78,7 @@ export default function ReusableTable({
               <td className="p-3 text-right">
                 <button 
                   onClick={() => editItem()}
-                  className="w-[6.75rem] h-[2.375rem] px-[0.6875rem] py-[0.4375rem] bg-[#C81E1E] rounded-[0.75rem] flex items-center justify-center gap-2 shadow ml-auto"
+                  className="w-[6.75rem] h-[2.375rem] px-[0.6875rem] py-[0.4375rem] bg-black rounded-[0.75rem] flex items-center justify-center gap-2 shadow ml-auto"
                 >
                     <FaEdit className="w-4 h-4 text-white" />
                   <span className="text-white text-sm font-semibold leading-5">Edit Item</span>

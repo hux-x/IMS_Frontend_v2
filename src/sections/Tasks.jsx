@@ -13,25 +13,33 @@ const Tasks = () => {
       id: 1,
       title: "Implement User Authentication",
       description: "Create login and registration system with JWT tokens",
-      status: "in progress",
+      status: "inProgress", // Fixed to match your modal's expected format
       priority: "high",
-      assignee: "Alice Johnson",
-      dueDate: "2024-07-30",
+      assignedTo: { name: "Alice Johnson" }, // Fixed to match expected structure
+      deadline: "2024-07-30", // Changed from dueDate to deadline
       progress: 33,
       items: 3,
-      files: 1
+      files: 1,
+      todoChecklist: [ // Changed from checklist to todoChecklist
+        { text: "Create login form", completed: true },
+        { text: "Implement JWT authentication", completed: false },
+        { text: "Add user registration form", completed: false }
+      ],
+      attachments: ["auth-spec.pdf"] // Added attachments array
     },
     {
       id: 2,
       title: "Design Dashboard UI",
       description: "Create responsive dashboard with analytics",
-      status: "todo",
+      status: "started", // Fixed to match your modal's expected format
       priority: "medium",
-      assignee: "Bob Smith",
-      dueDate: "2024-08-15",
+      assignedTo: { name: "Bob Smith" },
+      deadline: "2024-08-15",
       progress: 0,
       items: 2,
-      files: 0
+      files: 0,
+      todoChecklist: [],
+      attachments: []
     },
     {
       id: 3,
@@ -39,11 +47,13 @@ const Tasks = () => {
       description: "Document all API endpoints",
       status: "completed",
       priority: "low",
-      assignee: "Charlie Brown",
-      dueDate: "2024-07-25",
+      assignedTo: { name: "Charlie Brown" },
+      deadline: "2024-07-25",
       progress: 100,
       items: 2,
-      files: 0
+      files: 0,
+      todoChecklist: [],
+      attachments: []
     }
   ]);
 
@@ -57,12 +67,30 @@ const Tasks = () => {
     const newTaskWithId = {
       ...newTask,
       id: tasks.length + 1,
-      dueDate: newTask.deadline,
+      deadline: newTask.deadline, // Keep as deadline
       priority: newTask.priority.toLowerCase(),
-      status: newTask.status.toLowerCase(),
-      files: newTask.files.length
+      status: newTask.status,
+      attachments: newTask.attachments || []
     };
     setTasks([...tasks, newTaskWithId]);
+  };
+
+  // Add the missing update handler
+  const handleUpdateTask = (updatedTask) => {
+    console.log('Updating task:', updatedTask);
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === updatedTask.id ? updatedTask : task
+      )
+    );
+  };
+
+  // Add the missing delete handler
+  const handleDeleteTask = (taskId) => {
+    console.log('Deleting task:', taskId);
+    setTasks(prevTasks => 
+      prevTasks.filter(task => task.id !== taskId)
+    );
   };
 
   return (
@@ -86,8 +114,8 @@ const Tasks = () => {
           className="border px-3 py-2 rounded"
         >
           <option value="All">All Status</option>
-          <option value="todo">Todo</option>
-          <option value="in progress">In Progress</option>
+          <option value="started">Not Started</option>
+          <option value="inProgress">In Progress</option>
           <option value="completed">Completed</option>
         </select>
 
@@ -106,7 +134,12 @@ const Tasks = () => {
       {/* Task Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
+          <TaskCard 
+            key={task.id} 
+            task={task} 
+            onUpdate={handleUpdateTask}
+            onDelete={handleDeleteTask}
+          />
         ))}
       </div>
 
