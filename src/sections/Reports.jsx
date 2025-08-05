@@ -1,4 +1,3 @@
-// pages/reports.jsx
 import { useReportsData } from '@/hooks/useReportsData';
 import ReportFilters from '@/components/filters/ReportFilters';
 import SummaryCards from '@/components/cards/ReportSummaryCards';
@@ -10,12 +9,23 @@ export default function ReportsPage() {
     summary,
     setEmployee,
     employee,
+    setMonth,
+    setYear,
+    month,
+    year
   } = useReportsData();
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Attendance Reports</h1>
-      <ReportFilters employee={employee} setEmployee={setEmployee} />
+      <ReportFilters
+        employee={employee}
+        setEmployee={setEmployee}
+        month={month}
+        setMonth={setMonth}
+        year={year}
+        setYear={setYear}
+      />
       <SummaryCards summary={summary} />
       <ReportsTable data={reports} />
     </div>

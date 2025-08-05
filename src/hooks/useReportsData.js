@@ -1,6 +1,5 @@
-// hooks/useReportsData.js
 import { useMemo, useState } from 'react';
-import { dummyReports } from '../sections/data/dummyReports';
+import { dummyReports } from '@/sections/data/dummyReports';
 
 export const useReportsData = () => {
   const [employee, setEmployee] = useState('all');
@@ -9,10 +8,11 @@ export const useReportsData = () => {
 
   const filtered = useMemo(() => {
     return dummyReports.filter((r) => {
-      if (employee === 'all') return true;
-      return r.name.toLowerCase().includes(employee.toLowerCase());
+      if (employee !== 'all' && !r.name.toLowerCase().includes(employee.toLowerCase())) return false;
+      if (r.month !== month || r.year !== year) return false;
+      return true;
     });
-  }, [employee]);
+  }, [employee, month, year]);
 
   const summary = useMemo(() => {
     const total = filtered.reduce((acc, r) => acc + r.totalDays, 0);
@@ -21,7 +21,7 @@ export const useReportsData = () => {
       total,
       present,
       absent: total - present,
-      avgRate: ((present / total) * 100).toFixed(2),
+      avgRate: total > 0 ? ((present / total) * 100).toFixed(2) : '0.00',
     };
   }, [filtered]);
 
@@ -29,10 +29,10 @@ export const useReportsData = () => {
     reports: filtered,
     summary,
     setEmployee,
+    employee,
     setMonth,
     setYear,
     month,
-    year,
-    employee,
+    year
   };
 };

@@ -1,5 +1,4 @@
-// components/reports/ReportsTable.jsx
-import ReportCard from '../cards/ReportCard';
+import ReportCard from '@/components/cards/ReportCard';
 
 export default function ReportsTable({ data }) {
   return (

@@ -1,4 +1,3 @@
-// components/reports/ReportCard.jsx
 import { Download, TrendingUp } from 'lucide-react';
 
 export default function ReportCard({ report }) {
