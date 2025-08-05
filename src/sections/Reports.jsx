@@ -1,18 +1,23 @@
-// src/pages/Reports.jsx
-import ReportsHeader from "../components/layout/ReportsHeader";
-import ReportsFilters from "../components/filters/ReportFilters";
-import{ ReportsSummaryCards} from "../components/cards/ReportSummaryCards";
-import {ReportsTable} from "../components/layout/ReportsTable";
+// pages/reports.jsx
+import { useReportsData } from '@/hooks/useReportsData';
+import ReportFilters from '@/components/filters/ReportFilters';
+import SummaryCards from '@/components/cards/ReportSummaryCards';
+import ReportsTable from '@/components/layout/ReportsTable';
 
-function Reports() {
+export default function ReportsPage() {
+  const {
+    reports,
+    summary,
+    setEmployee,
+    employee,
+  } = useReportsData();
+
   return (
-    <div className="p-6 space-y-6">
-      <ReportsHeader />
-      <ReportsFilters />
-      <ReportsSummaryCards />
-      <ReportsTable />
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Attendance Reports</h1>
+      <ReportFilters employee={employee} setEmployee={setEmployee} />
+      <SummaryCards summary={summary} />
+      <ReportsTable data={reports} />
     </div>
   );
 }
-
-export default Reports;

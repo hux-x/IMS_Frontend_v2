@@ -1,50 +1,17 @@
-const months = ["January", "February", "March", "April", "May"];
-const years = [2024, 2025, 2026];
-
-export default function ReportsFilters({
-  selectedMonth,
-  selectedYear,
-  selectedEmployee,
-  onMonthChange,
-  onYearChange,
-  onEmployeeChange,
-}) {
+// components/reports/ReportFilters.jsx
+export default function ReportFilters({ employee, setEmployee }) {
   return (
-    <div className="flex flex-wrap gap-4 items-center">
+    <div className="flex gap-4 items-center mb-4">
       <select
-        value={selectedMonth}
-        onChange={(e) => onMonthChange(Number(e.target.value))}
-        className="p-2 border rounded"
+        className="border p-2 rounded"
+        value={employee}
+        onChange={(e) => setEmployee(e.target.value)}
       >
-        {months.map((month, idx) => (
-          <option key={idx} value={idx}>
-            {month}
-          </option>
-        ))}
+        <option value="all">All Employees</option>
+        <option value="alice">Alice</option>
+        <option value="bob">Bob</option>
+        <option value="charlie">Charlie</option>
       </select>
-
-      <select
-        value={selectedYear}
-        onChange={(e) => onYearChange(Number(e.target.value))}
-        className="p-2 border rounded"
-      >
-        {years.map((year) => (
-          <option key={year}>{year}</option>
-        ))}
-      </select>
-
-      <select
-        value={selectedEmployee}
-        onChange={(e) => onEmployeeChange(e.target.value)}
-        className="p-2 border rounded"
-      >
-        <option value="All">All Employees</option>
-        {/* Later dynamically inject employees */}
-      </select>
-
-      <button className="ml-auto px-4 py-2 bg-white border rounded hover:bg-gray-100">
-        Export PDF
-      </button>
     </div>
   );
 }
