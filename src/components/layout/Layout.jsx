@@ -46,6 +46,7 @@ const Layout = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
+          
             <Outlet />
           </motion.div>
         </main>
