@@ -11,13 +11,15 @@ import {
   Activity,
 } from "lucide-react";
 import TaskCard from "@/components/cards/TaskCard";
+import CreateTask from "@/components/modals/createTask";
 import { mockTeamData } from "@/mockData/team";
 
 const TeamDashboard = () => {
-  const [teamData] = useState(mockTeamData);
+  const [teamData, setTeamData] = useState(mockTeamData);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
 
   const { team } = teamData;
 
@@ -58,6 +60,34 @@ const TeamDashboard = () => {
     console.log("Task deleted:", taskId);
   };
 
+  const handleCreateTask = (newTaskData) => {
+    // Convert the CreateTask form data to match our task schema
+    const newTask = {
+      _id: `task${Date.now()}`, // Generate a temporary ID
+      title: newTaskData.description, // Using description as title since form doesn't have title
+      description: newTaskData.description,
+      status: newTaskData.status.toLowerCase().replace(' ', ''), // Convert "In Progress" to "inProgress"
+      priority: newTaskData.priority.toLowerCase(),
+      assignedTo: { name: newTaskData.assignee },
+      deadline: newTaskData.deadline ? `${newTaskData.deadline}T00:00:00Z` : null,
+      todoChecklist: newTaskData.checklist
+        .filter(item => item.trim() !== '')
+        .map(item => ({ text: item, completed: false })),
+      attachments: newTaskData.files || []
+    };
+
+    // Add the new task to the team data
+    setTeamData(prev => ({
+      ...prev,
+      team: {
+        ...prev.team,
+        teamTasks: [...prev.team.teamTasks, newTask]
+      }
+    }));
+
+    console.log("Task created:", newTask);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -67,7 +97,10 @@ const TeamDashboard = () => {
             <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
             <p className="text-gray-600">Led by {team.teamLead.name}</p>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+          <button 
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            onClick={() => setIsCreateTaskOpen(true)}
+          >
             <Plus size={16} />
             New Task
           </button>
@@ -265,6 +298,15 @@ const TeamDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Task Modal */}
+      {isCreateTaskOpen && (
+        <CreateTask 
+          isOpen={isCreateTaskOpen}
+          onClose={() => setIsCreateTaskOpen(false)}
+          onCreate={handleCreateTask}
+        />
+      )}
     </div>
   );
 };
