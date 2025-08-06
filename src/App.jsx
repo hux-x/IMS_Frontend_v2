@@ -9,6 +9,7 @@ import Attendance from '@/sections/Attendance';
 import Reports from '@/sections/Reports';
 import Teams from '@/sections/Teams';
 import AdminPanel from '@/sections/AdminPanel';
+import TeamDashboard from './pages/TeamDashboard';
 function App() {
   const { section } = useSection();
 
@@ -39,7 +40,11 @@ function App() {
         {section === 'admin' && (
           <Route index element={<AdminPanel />} /> 
         )}
+        {section === 'teamdashboard' && (
+          <Route index element={<TeamDashboard />} /> 
+        )}
       </Route>
+      
     </Routes>
   );
 }

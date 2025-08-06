@@ -35,105 +35,105 @@ export const mockUsers = [
     status: 'offline'
   },
    {
-    id: 'user-1',
+    id: 'user-6',
     name: 'John Doe',
     email: 'john@example.com',
     avatar: 'JD',
     status: 'online'
   },
   {
-    id: 'user-2',
+    id: 'user-7',
     name: 'Jane Smith',
     email: 'jane@example.com',
     avatar: 'JS',
     status: 'online'
   },
   {
-    id: 'user-3',
+    id: 'user-8',
     name: 'Mike Johnson',
     email: 'mike@example.com',
     avatar: 'MJ',
     status: 'away'
   },
   {
-    id: 'user-4',
+    id: 'user-9',
     name: 'Sarah Wilson',
     email: 'sarah@example.com',
     avatar: 'SW',
     status: 'online'
   },
   {
-    id: 'user-5',
+    id: 'user-0',
     name: 'David Brown',
     email: 'david@example.com',
     avatar: 'DB',
     status: 'offline'
   },
    {
-    id: 'user-1',
+    id: 'user-11',
     name: 'John Doe',
     email: 'john@example.com',
     avatar: 'JD',
     status: 'online'
   },
   {
-    id: 'user-2',
+    id: 'user-12',
     name: 'Jane Smith',
     email: 'jane@example.com',
     avatar: 'JS',
     status: 'online'
   },
   {
-    id: 'user-3',
+    id: 'user-13',
     name: 'Mike Johnson',
     email: 'mike@example.com',
     avatar: 'MJ',
     status: 'away'
   },
   {
-    id: 'user-4',
+    id: 'user-14',
     name: 'Sarah Wilson',
     email: 'sarah@example.com',
     avatar: 'SW',
     status: 'online'
   },
   {
-    id: 'user-5',
+    id: 'user-15',
     name: 'David Brown',
     email: 'david@example.com',
     avatar: 'DB',
     status: 'offline'
   },
    {
-    id: 'user-1',
+    id: 'user-16',
     name: 'John Doe',
     email: 'john@example.com',
     avatar: 'JD',
     status: 'online'
   },
   {
-    id: 'user-2',
+    id: 'user-21',
     name: 'Jane Smith',
     email: 'jane@example.com',
     avatar: 'JS',
     status: 'online'
   },
   {
-    id: 'user-3',
+    id: 'user-31',
     name: 'Mike Johnson',
     email: 'mike@example.com',
     avatar: 'MJ',
     status: 'away'
   },
   {
-    id: 'user-4',
+    id: 'user-41',
     name: 'Sarah Wilson',
     email: 'sarah@example.com',
     avatar: 'SW',
     status: 'online'
   },
   {
-    id: 'user-5',
+    id: 'user-51',
     name: 'David Brown',
     email: 'david@example.com',
     avatar: 'DB',

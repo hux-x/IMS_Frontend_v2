@@ -6,10 +6,10 @@ import {
   Calendar, 
   BarChart3, 
   Users, 
-  Settings, 
   LogOut,
   Shield,
-  UserCircle
+  UserCircle,
+ 
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import  useSection  from '@/hooks/useSection';
@@ -28,7 +28,8 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Admin Panel', icon: Shield, path: 'admin' },
     { name: 'Reports', icon: BarChart3, path: 'reports' },
     { name: 'Teams', icon: Users, path: 'teams' },
-    { name: 'Employees', icon: UserCircle, path: 'employees' }
+    { name: 'Employees', icon: UserCircle, path: 'employees' },
+    {name:"Team Dashboard", icon: UserCircle, path: 'teamdashboard'}
      
   ];
 
