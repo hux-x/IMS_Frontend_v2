@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import ImageMarker from 'react-image-marker';
 import MarkerDescriptionModal from '@/components/modals/MarkerDescriptionModal';
-import CustomMarker from '@/components/custom/CustomMarker';
 
 const ImageMarkerComponent = () => {
   const [markers, setMarkers] = useState([]);
