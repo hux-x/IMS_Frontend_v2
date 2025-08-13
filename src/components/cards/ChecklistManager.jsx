@@ -20,28 +20,49 @@ export default function ChecklistManager({ checklist, onChange }) {
   };
 
   return (
-    <div>
-      <label className="block mb-1 font-medium">Checklist</label>
-      <div className="flex gap-2 mb-2">
+    <div className="space-y-4">
+      <label className="block font-medium">Project Checklist</label>
+      
+      <div className="flex space-x-2">
         <input
           value={task}
           onChange={(e) => setTask(e.target.value)}
-          placeholder="Add task"
-          className="border p-2 rounded flex-1"
+          onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+          placeholder="Add new task"
+          className="flex-1 p-2 border rounded"
         />
-        <button type="button" onClick={handleAdd} className="bg-blue-500 text-white px-3 rounded">Add</button>
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="px-4 py-2 bg-green-600 text-white rounded"
+        >
+          Add
+        </button>
       </div>
-      <ul>
+
+      <div className="space-y-2">
         {checklist.map((item, i) => (
-          <li key={i} className="flex justify-between items-center border p-1 rounded mb-1">
-            <div className="flex items-center gap-2">
-              <input type="checkbox" checked={item.done} onChange={() => toggleDone(i)} />
-              <span className={item.done ? "line-through text-gray-500" : ""}>{item.text}</span>
+          <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={item.done}
+                onChange={() => toggleDone(i)}
+                className="h-5 w-5 rounded"
+              />
+              <span className={item.done ? "line-through text-gray-500" : ""}>
+                {item.text}
+              </span>
             </div>
-            <button type="button" onClick={() => removeTask(i)} className="text-red-500 text-xs">Remove</button>
-          </li>
+            <button
+              onClick={() => removeTask(i)}
+              className="text-red-500 hover:text-red-700"
+            >
+              Remove
+            </button>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
