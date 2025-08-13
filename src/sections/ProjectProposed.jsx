@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import ProjectList from "@/components/cards/ProjectList";
 import ProjectForm from "@/components/cards/PorjectForm";
+import ProjectModal from "@/components/modals/ProjectModal";
 
 export default function ProjectProposed() {
   const [projects, setProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
+  const [viewingProject, setViewingProject] = useState(null);
 
   const handleAddProject = (project) => {
     setProjects([...projects, { ...project, id: Date.now() }]);
@@ -21,7 +23,7 @@ export default function ProjectProposed() {
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Proposed Projects</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Proposed Projects</h1>
 
       {editingProject ? (
         <ProjectForm
@@ -37,7 +39,15 @@ export default function ProjectProposed() {
         projects={projects}
         onEdit={setEditingProject}
         onDelete={handleDeleteProject}
+        onView={setViewingProject}
       />
+
+      {viewingProject && (
+        <ProjectModal 
+          project={viewingProject} 
+          onClose={() => setViewingProject(null)} 
+        />
+      )}
     </div>
   );
 }
