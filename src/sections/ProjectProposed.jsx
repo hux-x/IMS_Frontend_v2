@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
-import ProjectModal from './ProjectModal';
-import GalleryModal from './GalleryModal';
-import ProjectList from './ProjectList';
+import React, { useState } from "react";
+import ProjectList from "@/components/cards/ProjectList";
+import ProjectForm from "@/components/cards/PorjectForm";
 
 export default function ProjectProposed() {
   const [projects, setProjects] = useState([]);
   const [editingProject, setEditingProject] = useState(null);
-  const [viewingProject, setViewingProject] = useState(null);
 
   const handleAddProject = (project) => {
     setProjects([...projects, { ...project, id: Date.now() }]);
@@ -23,33 +21,22 @@ export default function ProjectProposed() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Proposed Projects</h1>
+      <h1 className="text-xl font-bold mb-4">Proposed Projects</h1>
 
       {editingProject ? (
-        <ProjectModal
+        <ProjectForm
           initialData={editingProject}
-          onSave={handleUpdateProject}
-          onClose={() => setEditingProject(null)}
+          onSubmit={handleUpdateProject}
+          onCancel={() => setEditingProject(null)}
         />
       ) : (
-        <ProjectModal
-          onSave={handleAddProject}
-          onClose={() => setEditingProject(null)}
-        />
-      )}
-
-      {viewingProject && (
-        <GalleryModal
-          project={viewingProject}
-          onClose={() => setViewingProject(null)}
-        />
+        <ProjectForm onSubmit={handleAddProject} />
       )}
 
       <ProjectList
         projects={projects}
         onEdit={setEditingProject}
         onDelete={handleDeleteProject}
-        onView={setViewingProject}
       />
     </div>
   );
