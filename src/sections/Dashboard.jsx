@@ -3,6 +3,7 @@ import StatCard from "@/components/cards/StatCard"; // Make sure to import your 
 import { BarChart3, Users, ShoppingCart, DollarSign } from "lucide-react";
 import TaskCard from "@/components/cards/TaskCard";
 import TeamCard from "@/components/cards/TeamCard";
+import useDashboard from "@/hooks/useDashboard";
 const Dashboard = () => {
   // Array of card data
   const stats = [
@@ -54,6 +55,8 @@ const Dashboard = () => {
 ];
 
 
+  const { dashboard, loading, error } = useDashboard();
+  console.log(dashboard);
   return (
     <div>
       <SectionHeader

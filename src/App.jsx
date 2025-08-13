@@ -10,7 +10,7 @@ import Reports from '@/sections/Reports';
 import Teams from '@/sections/Teams';
 import AdminPanel from '@/sections/AdminPanel';
 import TeamDashboard from './pages/TeamDashboard';
-import ProjectProposed from './sections/projectproposed';
+import ProjectProposed from '@/sections/ProjectProposed';
 function App() {
   const { section } = useSection();
 

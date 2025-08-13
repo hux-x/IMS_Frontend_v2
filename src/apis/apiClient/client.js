@@ -9,7 +9,7 @@ const client = axios.create({
   }
 });
 client.interceptors.request.use(function (config) {
-    const token = getToken();
+    const token =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4Nzk2ZjBmYzRmOTYxNGNlN2RmNWU3YiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc1NTA5NzY0NiwiZXhwIjoxNzU1MTAxMjQ2fQ.VWHmkdBo41e9WqGnBYIo-LnhzOP4GkS_lmLUtbzU884"
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
