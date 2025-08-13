@@ -10,6 +10,7 @@ import Reports from '@/sections/Reports';
 import Teams from '@/sections/Teams';
 import AdminPanel from '@/sections/AdminPanel';
 import TeamDashboard from './pages/TeamDashboard';
+import ProjectProposed from './sections/projectproposed';
 function App() {
   const { section } = useSection();
 
@@ -34,6 +35,18 @@ function App() {
         {section === 'reports' && (
           <Route index element={<Reports />} /> 
         )}
+        {
+          section==="bugs"&&(
+            <Route index element={<Bugs/>}/>
+          
+          )
+        }
+        {
+          section==="projectproposed"&&(
+            <Route index element={<ProjectProposed/>}/>
+          
+          )
+        }
         {section === 'teams' && (
           <Route index element={<Teams />} /> 
         )}
