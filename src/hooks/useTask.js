@@ -1,23 +1,70 @@
 import { useState, useCallback } from "react";
 import taskService from "@/apis/services/taskService";
-
+const PAGE_SIZE = 15;
 const useTask = () => {
 
   const [allTasks, setAllTasks] = useState([]);
   const [myTasks, setMyTasks] = useState([]);
-  const [assignedTasks, setAssignedTasks] = useState([]);
-  const [backlogTasks, setBacklogTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState({
+    type: "allTasks",               //enum: [allTasks,myTasks] 
+    filters: [],
+    tasks: [],
+  });
 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [paginationParams,setPaginationParams] = useState({taskType:'all',page:1,isRefresh:true})
+  const [maxPages,setMaxPages] = useState();
+  const [isRefreshing,setIsRefreshing] = useState(true) //will be used for shimmers (when navigating to the next page)
 
-  const getAllTasks = useCallback(async (limit = 10, offset = 0) => {
+
+  const onRefresh = useCallback(()=>{
+    if(!loading){
+      setPaginationParams((prev)=>{
+       return{
+        taskType:prev.taskType,
+        page:1,
+        isRefresh:true
+       } 
+      })
+    }
+  })
+
+  const navigateToNextPage = useCallback((taskType)=>{
+
+    if(!loading && paginationParams.page < maxPages){
+      setPaginationParams((prev)=>{
+        return {
+          taskType: taskType,
+          page: prev.page+1,
+          isRefresh: true
+        }
+      })
+    }
+    
+  })
+
+  const navigateToPreviousPage = useCallback(()=>{
+      if(!loading && !paginationParams.page <= 1){
+      setPaginationParams((prev)=>{
+        return {
+          taskType: prev.taskType,
+          page: prev.page-1,
+          isRefresh: true
+        }
+      })
+    }
+  })
+
+
+  const getAllTasks = useCallback(async (limit = 10, offset = 0) => { //for admin -- fetches all available in the database 
     try {
       setLoading(true);
       setError(null);
-      const res = await taskService.getAllTasks(limit, offset);
+      const res = await taskService.getAllTasks(limit, offset)
+      console.log(res)
       setAllTasks(res.data);
     } catch (err) {
       setError(err);
@@ -26,38 +73,20 @@ const useTask = () => {
     }
   }, []);
 
-  const getMyTasks = useCallback(async (limit = 10, offset = 0) => {
+  const getMyTasks = useCallback(async (limit = 10, offset = 0) => { // all tasks but for employee -- fethces all tasks of that employee 
     try {
       setLoading(true);
       setError(null);
       const res = await taskService.getMyTasks(limit, offset);
+      console.log(res)
       setMyTasks(res.data);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const getAssignedTasks = useCallback(async (limit = 10, offset = 0) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await taskService.getAssignedTasks(limit, offset);
-      setAssignedTasks(res.data);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const getBacklogTasks = useCallback(async (limit = 10, offset = 0) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await taskService.getBacklogTasks(limit, offset);
-      setBacklogTasks(res.data);
+      let pages = 0;
+      if(res.data.total%PAGE_SIZE == 0){
+        pages = res.data.total/PAGE_SIZE
+      }else{
+        pages = res.data.total/PAGE_SIZE + 1;
+      }
+      setMaxPages(pages)
     } catch (err) {
       setError(err);
     } finally {
@@ -113,20 +142,41 @@ const useTask = () => {
     }
   }, []);
 
+  const getFilteredTasks = useCallback(async ( limit = 10, offset = 0, status = null, priority = null,type ) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await taskService.filteredTasks(limit, offset, status, priority);
+      setFilteredTasks({
+        type: type,
+        filters: [status, priority],
+        tasks: res.data.tasks,
+      });
+      setPaginationParams((prev)=>{
+        return {
+
+        }
+      })
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filteredTasks.filters, filteredTasks.type, paginationParams.taskType,paginationParams.page]);
+  
+
   return {
     allTasks,
     myTasks,
-    assignedTasks,
-    backlogTasks,
     loading,
     error,
+    filteredTasks,
     getAllTasks,
     getMyTasks,
-    getAssignedTasks,
-    getBacklogTasks,
     addTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    getFilteredTasks
   };
 };
 

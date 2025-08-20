@@ -7,11 +7,17 @@ import {
     getMyTasks,
     getAssignedTasks,
     getTaskById,
+    fetchAssignees
 } from "@/apis/endpoints/tasks";
 
 const taskService = {
     getAllTasks: async (limit = 10, offset = 0) => {
-        return await getAllTasks(limit, offset);
+        const res =  await getAllTasks(limit, offset);
+        return res
+    },
+    getAssignees: async()=>{
+        const res =  await fetchAssignees();
+        console.log(res)
     },
 
     createTask: async ({ assignedTo, title, description, attachments = [], deadline, startTime, teamId, priority = 'medium' }) => { //{} ==> newTask

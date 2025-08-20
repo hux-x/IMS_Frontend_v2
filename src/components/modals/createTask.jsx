@@ -1,6 +1,7 @@
 // File: src/components/CreateTask.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Check, Plus, Paperclip } from 'lucide-react';
+import taskService from '@/apis/services/taskService';
 
 const CreateTask = ({ onClose, onCreate,isOpen }) => {
   const [taskData, setTaskData] = useState({
@@ -13,6 +14,7 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
     checklist: [''],
     files: []
   });
+
 
   const [fileInput, setFileInput] = useState(null);
 
@@ -53,6 +55,11 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
     onCreate(finalTask);
     onClose();
   };
+
+
+  useEffect(()=>{
+    taskService.getAssignees();
+  })
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50"style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>

@@ -1,4 +1,4 @@
-import client from "@/lib/api/client";
+import client from "@/apis/apiClient/client";
 
 export const createTask = async (
       assignedTo,
@@ -15,7 +15,9 @@ export const createTask = async (
 export const reassignTask = async (taskId, newAssigneeId) => {
     return await client.put(`/tasks/reassign`, {newAssigneeId,taskId});
 };
-
+export const fetchAssignees = async()=>{
+    return await client.get('/tasks//assginees');
+}
 export const updateTask = async(taskId,title=null,description=null,attachments=null,deadline=null,priority=null)=>{
     return await client.put(`/tasks/update/${taskId}`, {title,description,attachments,deadline,priority});
 }

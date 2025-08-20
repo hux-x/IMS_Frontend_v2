@@ -5,19 +5,17 @@ const useTeam = () => {
 
   const [teams, setTeams] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
-  const [members, setMembers] = useState([]);
 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
 
   const getAllTeams = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const res = await teamService.getAllTeams();
-      setTeams(res.data);
+      setTeams(res.data.teams);
     } catch (err) {
       setError(err);
     } finally {
