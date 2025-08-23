@@ -12,7 +12,7 @@ const useDashboard = () => {
         setLoading(true);
         setError(null); 
         const response = await dashboardService.getUserDashboard();
-        setDashboard(response.data);
+        setDashboard(response.data.data);
       } catch (error) {
         console.error("Dashboard data fetch failed:", error);
         setError(error.message || "Failed to fetch dashboard data");

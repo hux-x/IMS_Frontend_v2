@@ -12,19 +12,20 @@ import {
 
 const taskService = {
     getAllTasks: async (limit = 10, offset = 0) => {
-        const res =  await getAllTasks(limit, offset);
-        return res
-    },
-    getAssignees: async()=>{
-        const res =  await fetchAssignees();
-        console.log(res)
+        return await getAllTasks(limit, offset);
     },
 
-    createTask: async ({ assignedTo, title, description, attachments = [], deadline, startTime, teamId, priority = 'medium' }) => { //{} ==> newTask
+    getAssignees: async () => {
+        const res = await fetchAssignees();
+        console.log(res);
+        return res;
+    },
+
+    createTask: async ({ assignedTo, title, description, attachments = [], deadline, startTime, teamId, priority = 'medium' }) => {
         return await createTask(assignedTo, title, description, attachments, deadline, startTime, teamId, priority);
     },
 
-    updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null }) => {  //{} ==> newTask
+    updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null }) => {
         return await updateTask(taskId, title, description, attachments, deadline, priority);
     },
 
@@ -32,8 +33,15 @@ const taskService = {
         return await deleteTask(taskId);
     },
 
-    filteredTasks: async (limit = 10, offset = 0, status = null, priority = null) => {
-        return await filteredTasks(limit, offset, status, priority);
+
+    filteredTasks: async (filters = {}) => {
+        const queryParams = Object.fromEntries(
+            Object.entries(filters).filter(([_, v]) => v !== null && v !== undefined && v !== "" && v !== "All")
+        );
+        console.log(queryParams)
+        const queryString = new URLSearchParams(queryParams).toString();
+
+        return await filteredTasks(queryString);
     },
 
     getMyTasks: async (limit = 10, offset = 0) => {

@@ -1,41 +1,61 @@
 // File: src/components/CreateTask.jsx
-import React, { useEffect, useState } from 'react';
-import { X, Check, Plus, Paperclip } from 'lucide-react';
-import taskService from '@/apis/services/taskService';
+import React, { useEffect, useState } from "react";
+import { X, Check, Plus, Paperclip } from "lucide-react";
+import taskService from "@/apis/services/taskService";
 
-const CreateTask = ({ onClose, onCreate,isOpen }) => {
+const CreateTask = ({ onClose, onCreate, isOpen }) => {
   const [taskData, setTaskData] = useState({
-    title: '',
-    description: '',
-    assignee: '',
-    priority: 'High',
-    deadline: '',
-    status: 'Todo',
-    checklist: [''],
-    files: []
+    title: "",
+    description: "",
+    team: "",          // 👈 added team field
+    assignedTo: "",
+    priority: "high",
+    deadline: "",
+    status: "Todo",
+    checklist: [""],
+    files: [],
   });
 
-
+  const [teams, setTeams] = useState([]);
   const [fileInput, setFileInput] = useState(null);
+
+  // Fetch teams + members
+  useEffect(() => {
+    const getAssignees = async () => {
+      try {
+        const res = await taskService.getAssignees();
+        setTeams(res?.data?.teams || []); // 👈 now storing full teams
+      } catch (error) {
+        alert("error fetching teams");
+        console.log(error);
+      }
+    };
+    getAssignees();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setTaskData(prev => ({ ...prev, [name]: value }));
+    setTaskData((prev) => ({ ...prev, [name]: value }));
+
+    // reset assignee if team changes
+    if (name === "team") {
+      setTaskData((prev) => ({ ...prev, assignedTo: "" }));
+    }
   };
 
   const handleChecklistChange = (index, value) => {
     const newChecklist = [...taskData.checklist];
     newChecklist[index] = value;
-    setTaskData(prev => ({ ...prev, checklist: newChecklist }));
+    setTaskData((prev) => ({ ...prev, checklist: newChecklist }));
   };
 
   const addChecklistItem = () => {
-    setTaskData(prev => ({ ...prev, checklist: [...prev.checklist, ''] }));
+    setTaskData((prev) => ({ ...prev, checklist: [...prev.checklist, ""] }));
   };
 
   const removeChecklistItem = (index) => {
     const newChecklist = taskData.checklist.filter((_, i) => i !== index);
-    setTaskData(prev => ({ ...prev, checklist: newChecklist }));
+    setTaskData((prev) => ({ ...prev, checklist: newChecklist }));
   };
 
   const handleFileChange = (e) => {
@@ -49,24 +69,27 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
     const finalTask = {
       ...taskData,
       files: fileInput ? [fileInput.name] : [],
-      progress: taskData.status === 'Completed' ? 100 : 0,
-      items: taskData.checklist.filter(item => item.trim() !== '').length
+      checklist: taskData.checklist.filter((item) => item.trim() !== ""),
     };
+    console.log(finalTask);
     onCreate(finalTask);
     onClose();
   };
 
-
-  useEffect(()=>{
-    taskService.getAssignees();
-  })
+  // get members of selected team
+  const selectedTeam = teams.find((t) => t._id === taskData.team);
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50"style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}>
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50"
+      style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+    >
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl transition-all duration-300 border border-gray-200">
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-900">Create New Task</h3>
+          <h3 className="text-xl font-semibold text-gray-900">
+            Create New Task
+          </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-black">
             <X size={22} />
           </button>
@@ -74,9 +97,27 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Task Title
+            </label>
+            <textarea
+              name="title"
+              value={taskData.title}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-xl p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
+              placeholder="Create login and registration system with JWT tokens"
+              rows={1}
+              required
+            />
+          </div>
+
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Task Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Task Description
+            </label>
             <textarea
               name="description"
               value={taskData.description}
@@ -90,14 +131,18 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
 
           {/* Checklist */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Checklist</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Checklist
+            </label>
             <div className="space-y-2">
               {taskData.checklist.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <input
                     type="text"
                     value={item}
-                    onChange={(e) => handleChecklistChange(index, e.target.value)}
+                    onChange={(e) =>
+                      handleChecklistChange(index, e.target.value)
+                    }
                     className="flex-1 border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-black"
                     placeholder="Add checklist item"
                   />
@@ -123,11 +168,15 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
 
           {/* File Upload */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Attachment</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Attachment
+            </label>
             <div className="border border-gray-300 rounded-xl p-3 bg-gray-50 flex justify-between items-center">
               {fileInput ? (
                 <>
-                  <span className="text-sm text-gray-700">{fileInput.name}</span>
+                  <span className="text-sm text-gray-700">
+                    {fileInput.name}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setFileInput(null)}
@@ -140,7 +189,11 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
                 <label className="flex items-center cursor-pointer text-sm text-gray-600">
                   <Paperclip size={16} className="mr-2" />
                   Choose File
-                  <input type="file" onChange={handleFileChange} className="hidden" />
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
                 </label>
               )}
             </div>
@@ -148,38 +201,69 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
 
           {/* Task Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Assignee */}
+            {/* Team */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Assignee</label>
-              <input
-                type="text"
-                name="assignee"
-                value={taskData.assignee}
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Team
+              </label>
+              <select
+                name="team"
+                value={taskData.team}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
-                placeholder="e.g. Alice Johnson"
-                required
-              />
+              >
+                <option value="">Select Team</option>
+                {teams.map((team) => (
+                  <option key={team._id} value={team._id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Assignee */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Assignee
+              </label>
+              <select
+                name="assignedTo"
+                value={taskData.assignedTo}
+                onChange={handleChange}
+                disabled={!taskData.team}
+                className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
+              >
+                <option value="">Select Assignee</option>
+                {selectedTeam?.members?.map((member) => (
+                  <option key={member._id} value={member._id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Priority */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Priority
+              </label>
               <select
                 name="priority"
                 value={taskData.priority}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
               >
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
+                <option>high</option>
+                <option>medium</option>
+                <option>low</option>
               </select>
             </div>
 
             {/* Deadline */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Deadline</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Deadline
+              </label>
               <input
                 type="date"
                 name="deadline"
@@ -191,16 +275,23 @@ const CreateTask = ({ onClose, onCreate,isOpen }) => {
             </div>
 
             {/* Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status
+              </label>
               <div className="flex space-x-4">
-                {['Todo', 'In Progress', 'Completed'].map((status) => (
-                  <label key={status} className="flex items-center text-sm text-gray-700">
+                {["Todo", "started", "inProgress", "completed"].map((status) => (
+                  <label
+                    key={status}
+                    className="flex items-center text-sm text-gray-700"
+                  >
                     <input
                       type="radio"
                       name="status"
                       checked={taskData.status === status}
-                      onChange={() => setTaskData(prev => ({ ...prev, status }))}
+                      onChange={() =>
+                        setTaskData((prev) => ({ ...prev, status }))
+                      }
                       className="mr-2 accent-black"
                     />
                     {status}

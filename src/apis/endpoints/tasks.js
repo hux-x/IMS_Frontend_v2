@@ -16,14 +16,14 @@ export const reassignTask = async (taskId, newAssigneeId) => {
     return await client.put(`/tasks/reassign`, {newAssigneeId,taskId});
 };
 export const fetchAssignees = async()=>{
-    return await client.get('/tasks//assginees');
+    return await client.get('/tasks/assignees');
 }
 export const updateTask = async(taskId,title=null,description=null,attachments=null,deadline=null,priority=null)=>{
     return await client.put(`/tasks/update/${taskId}`, {title,description,attachments,deadline,priority});
 }
 
-export const filteredTasks = async(limit,offset,status=null,priority=null)=>{
-    return await client.get(`/tasks/filter?limit=${limit}&offset=${offset}&status=${status}&priority=${priority}`);
+export const filteredTasks = async(queryParams)=>{
+    return await client.get(`/tasks/filter?${queryParams}`);
 }
 
 export const getAllTasks = async(limit,offset)=>{
