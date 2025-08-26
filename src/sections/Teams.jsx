@@ -21,7 +21,7 @@ const Teams = () => {
         return apiTeams.map(team => ({
             id: team._id,
             name: team.name,
-            description: `Team created by ${team.createdBy.name}`, // You can customize this
+            description: team.description, 
             lead: {
                 id: team.teamLead._id,
                 name: team.teamLead.name,

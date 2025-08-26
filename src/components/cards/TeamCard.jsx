@@ -9,6 +9,7 @@ const TeamCard = ({ team, onClick }) => {
     const membersArray = Array.isArray(team.members) ? team.members : [];
     const membersToShow = membersArray.slice(0, 3);
     const remainingMembers = membersArray.length - membersToShow.length;
+    console.log(team)
 
     return (
         <div
