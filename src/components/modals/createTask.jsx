@@ -7,7 +7,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
   const [taskData, setTaskData] = useState({
     title: "",
     description: "",
-    team: "",          // 👈 added team field
+    teamId: "",          // 👈 added team field
     assignedTo: "",
     priority: "high",
     deadline: "",
@@ -38,7 +38,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
     setTaskData((prev) => ({ ...prev, [name]: value }));
 
     // reset assignee if team changes
-    if (name === "team") {
+    if (name === "teamId") {
       setTaskData((prev) => ({ ...prev, assignedTo: "" }));
     }
   };
@@ -69,15 +69,17 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
     const finalTask = {
       ...taskData,
       files: fileInput ? [fileInput.name] : [],
-      checklist: taskData.checklist.filter((item) => item.trim() !== ""),
+      todoChecklist: taskData.checklist.filter((item) => item.trim() !== ""),
     };
-    console.log(finalTask);
+    
+
+    
     onCreate(finalTask);
     onClose();
   };
 
   // get members of selected team
-  const selectedTeam = teams.find((t) => t._id === taskData.team);
+  const selectedTeam = teams.find((t) => t._id === taskData.teamId);
 
   return (
     <div
@@ -207,8 +209,8 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
                 Team
               </label>
               <select
-                name="team"
-                value={taskData.team}
+                name="teamId"
+                value={taskData.teamId}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
               >
@@ -230,7 +232,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
                 name="assignedTo"
                 value={taskData.assignedTo}
                 onChange={handleChange}
-                disabled={!taskData.team}
+                disabled={!taskData.teamId}
                 className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
               >
                 <option value="">Select Assignee</option>

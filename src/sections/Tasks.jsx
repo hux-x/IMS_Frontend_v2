@@ -31,7 +31,6 @@ const Tasks = () => {
     try {
       const offset = (pageNumber - 1) * PAGE_SIZE;
       const res = await taskService.getAllTasks(LIMIT, offset);
-      console.log(res);
       setTasks(res.data.tasks);
       setPaginationParams({
         isRefresh: false,
@@ -46,10 +45,12 @@ const Tasks = () => {
   };
 
   const handleUpdateTask = async (taskId, updatedTask) => {
+  
     try {
-      const res = await taskService.updateTask(taskId, updatedTask);
+      
+      const res = await taskService.updateTask(updatedTask._id, updatedTask);
       setTasks(prev => 
-        prev.map(task => task.id === taskId ? res.data : task)
+        prev.map(task => task._id === taskId ? res.data.task : task)
       );
     } catch (err) {
       console.log(err);
@@ -58,8 +59,9 @@ const Tasks = () => {
 
   const handleDeleteTask = async (taskId) => {
     try {
-      await taskService.deleteTask(taskId);
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      const res = await taskService.deleteTask(taskId);
+      console.log(res)
+      setTasks(prev => prev.filter(task => task._id !== taskId));
     } catch (err) {
       console.log(err);
     }
@@ -191,23 +193,20 @@ const Tasks = () => {
     }
   };
 
-  const goToLastPage = () => {
-    setPaginationParams(prev => ({ ...prev, pageNumber: prev.maxPages }));
-  };
 
   useEffect(() => {
     // Get assignees on component mount
     const getAssignees = async () => {
       try {
-        const res = await taskService.getAssignees();
+        const res = await taskService.getAssigneesForFilteration();
         setAssignees(res?.data?.assignees || []);
+        console.log(res?.data.assignees, "ASSSSS")
       } catch (error) {
         alert('error fetching assignees');
       }
     };
     getAssignees();
     
-    // Initialize with default pagination params
     setPaginationParams(prev => ({ ...prev, pageNumber: 1 }));
   }, []);
 
@@ -276,7 +275,7 @@ const Tasks = () => {
         {/* Pagination Controls */}
         <div className="flex gap-2 items-center ml-auto">
           <button
-            onClick={goToFirstPage}
+            onClick={goToPreviousPage}
             disabled={paginationParams.pageNumber === 1 || loading}
             className="p-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -292,7 +291,7 @@ const Tasks = () => {
        
 
           <button
-            onClick={goToLastPage}
+            onClick={goToNextPage}
             disabled={paginationParams.pageNumber === paginationParams.maxPages || loading}
             className="p-2 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -333,6 +332,7 @@ const Tasks = () => {
         <CreateTask
           onClose={() => setShowCreateTask(false)}
           onCreate={addTask}
+          
         />
       )}
     </div>

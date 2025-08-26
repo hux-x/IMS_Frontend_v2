@@ -1,6 +1,7 @@
 // src/components/team/TeamDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaEdit, FaTrash, FaCrown, FaUsers, FaEnvelope, FaInfoCircle } from 'react-icons/fa';
+import { FaTimes, FaEdit, FaTrash, FaCrown, FaUsers, FaEnvelope, FaInfoCircle, FaLink, FaExternalLinkAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const teamColors = ['#4A90E2', '#7ED321', '#9013FE', '#F5A623', '#D0021B', '#50E3C2'];
 
@@ -219,6 +220,7 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                     </div>
                     <div className="flex items-center space-x-3">
                         {!isEditing ? (
+                           <>
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition duration-200 ease-in-out"
@@ -226,6 +228,14 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                                 <FaEdit />
                                 <span>Edit</span>
                             </button>
+                             <Link to={`/teamdashboard/${team.id}`}
+                                
+                                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition duration-200 ease-in-out"
+                            >
+                                <FaExternalLinkAlt />
+                                <span>Dashboard</span>
+                            </Link>
+                           </>
                         ) : (
                             <button
                                 onClick={handleSave}

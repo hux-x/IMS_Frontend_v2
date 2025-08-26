@@ -7,7 +7,8 @@ import {
     getMyTasks,
     getAssignedTasks,
     getTaskById,
-    fetchAssignees
+    fetchAssignees,
+    getAssigneesForFiltering
 } from "@/apis/endpoints/tasks";
 
 const taskService = {
@@ -21,8 +22,9 @@ const taskService = {
         return res;
     },
 
-    createTask: async ({ assignedTo, title, description, attachments = [], deadline, startTime, teamId, priority = 'medium' }) => {
-        return await createTask(assignedTo, title, description, attachments, deadline, startTime, teamId, priority);
+    createTask: async (task) => {
+        const {assignedTo, title, description, attachments = [], deadline, startTime, teamId, priority = 'medium',todoChecklist } = task
+        return await createTask(assignedTo, title, description, attachments, deadline, startTime, teamId, priority,todoChecklist);
     },
 
     updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null }) => {
@@ -63,6 +65,9 @@ const taskService = {
     getBacklogTasks: async (limit = 10, offset = 0) => {
         return await getBacklogTasks(limit, offset);
     },
+    getAssigneesForFilteration: async()=>{
+        return await getAssigneesForFiltering();
+    }
 };
 
 export default taskService;

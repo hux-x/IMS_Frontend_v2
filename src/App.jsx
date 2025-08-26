@@ -1,7 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import Dashboard from '@/sections/Dashboard';
-import useSection from '@/hooks/useSection';
 import Employees from '@/sections/Employees';
 import Tasks from '@/sections/Tasks';
 import Chats from '@/sections/Chats';
@@ -11,53 +10,31 @@ import Teams from '@/sections/Teams';
 import AdminPanel from '@/sections/AdminPanel';
 import TeamDashboard from './pages/TeamDashboard';
 import ProjectProposed from '@/sections/ProjectProposed';
-function App() {
-  const { section } = useSection();
+import Bugs from '@/sections/Bugs';
 
+function App() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        {section === 'dashboard' && (
-          <Route index element={<Dashboard />} /> 
-        )}
-        {section === 'employees' && (
-          <Route index element={<Employees />} /> 
-        )}
-        {section === 'tasks' && (
-          <Route index element={<Tasks />} /> 
-        )}
-        {section === 'chat' && (
-          <Route index element={<Chats />} /> 
-        )}
-        {section === 'attendance' && (
-          <Route index element={<Attendance />} /> 
-        )}
-        {section === 'reports' && (
-          <Route index element={<Reports />} /> 
-        )}
-        {
-          section==="bugs"&&(
-            <Route index element={<Bugs/>}/>
-          
-          )
-        }
-        {
-          section==="projectproposed"&&(
-            <Route index element={<ProjectProposed/>}/>
-          
-          )
-        }
-        {section === 'teams' && (
-          <Route index element={<Teams />} /> 
-        )}
-        {section === 'admin' && (
-          <Route index element={<AdminPanel />} /> 
-        )}
-        {section === 'teamdashboard' && (
-          <Route index element={<TeamDashboard />} /> 
-        )}
+        {/* Default landing page */}
+        <Route index element={<Dashboard />} />
+
+        {/* Nested routes */}
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="employees" element={<Employees />} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="chat" element={<Chats />} />
+        <Route path="attendance" element={<Attendance />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="teams" element={<Teams />} />
+        <Route path="admin" element={<AdminPanel />} />
+        <Route path="teamdashboard" element={<TeamDashboard />} />
+        <Route path="projectproposed" element={<ProjectProposed />} />
+        <Route path="bugs" element={<Bugs />} />
+
+        {/* Example dynamic nested route */}
+        <Route path="teamdashboard/:teamId" element={<TeamDashboard />} />
       </Route>
-      
     </Routes>
   );
 }

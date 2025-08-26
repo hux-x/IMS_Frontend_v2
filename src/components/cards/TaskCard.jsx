@@ -31,7 +31,7 @@ const TaskCard = ({ task, onUpdate, onDelete }) => {
   const progress = calculateProgress();
 
   const handleUpdate = (updatedTask) => {
-    onUpdate(updatedTask);
+    onUpdate(updatedTask._id,updatedTask);
     setIsUpdateModalOpen(false);
     // setIsDetailModalOpen(false);
   };

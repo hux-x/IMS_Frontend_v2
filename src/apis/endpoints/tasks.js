@@ -8,9 +8,21 @@ export const createTask = async (
       deadline,
       startTime,
       teamId,
-      priority = 'medium',) => {
-    return await client.post("/tasks/create", {assignedTo,teamId, title, description, attachments, deadline, startTime, priority});
+      priority = 'medium',
+      todoChecklist) => {
+    return await client.post("/tasks/create", {
+        assignedTo,
+        teamId, 
+        title, 
+        description, 
+        attachments, 
+        deadline, 
+        startTime, 
+        priority,
+        todoChecklist
+    });
 };
+
 
 export const reassignTask = async (taskId, newAssigneeId) => {
     return await client.put(`/tasks/reassign`, {newAssigneeId,taskId});
@@ -18,8 +30,18 @@ export const reassignTask = async (taskId, newAssigneeId) => {
 export const fetchAssignees = async()=>{
     return await client.get('/tasks/assignees');
 }
-export const updateTask = async(taskId,title=null,description=null,attachments=null,deadline=null,priority=null)=>{
-    return await client.put(`/tasks/update/${taskId}`, {title,description,attachments,deadline,priority});
+export const updateTask = async(taskId,title=null,description=null,attachments=null,deadline=null,priority=null,todoChecklist=null)=>{
+    const updateData = {}
+    if (title !== null) updateData.title = title;
+    if (description !== null) updateData.description = description;
+    if (attachments !== null) updateData.attachments = attachments;
+    if (deadline !== null) updateData.deadline = deadline;
+    if (priority !== null) updateData.priority = priority;
+    if(todoChecklist!== null) updateData.todoChecklist = todoChecklist
+    console.log(updateData)
+    
+    return await client.put(`/tasks/update/${taskId}`, updateData);
+  
 }
 
 export const filteredTasks = async(queryParams)=>{
@@ -43,4 +65,8 @@ export const getTaskById = async(taskId)=>{
 
 export const deleteTask = async(taskId)=>{
     return await client.delete(`/tasks/${taskId}`);
+}
+
+export const getAssigneesForFiltering = async()=>{
+    return await client.get("/tasks/filterAssignees")
 }

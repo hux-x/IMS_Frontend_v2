@@ -6,7 +6,6 @@ const TeamCard = ({ team, onClick }) => {
     const getInitials = (name) => {
         return name.split(' ').map(n => n[0]).join('').toUpperCase();
     };
-
     const membersArray = Array.isArray(team.members) ? team.members : [];
     const membersToShow = membersArray.slice(0, 3);
     const remainingMembers = membersArray.length - membersToShow.length;
@@ -21,7 +20,7 @@ const TeamCard = ({ team, onClick }) => {
                     className="w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl font-bold"
                     style={{ backgroundColor: team.color || '#4A90E2' }}
                 >
-                    {getInitials(team.name)}
+                    {team?.name?.charAt(0)}
                 </div>
                 <div className="text-sm px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
                     {membersArray.length} members
@@ -32,7 +31,6 @@ const TeamCard = ({ team, onClick }) => {
 
             <div className="flex items-center text-gray-700 text-sm mb-2">
                 <FaCrown className="mr-2 text-yellow-500" />
-                {/* --- FIX APPLIED HERE --- */}
                 <span>Lead: {team.lead ? team.lead.name : 'N/A'}</span>
             </div>
 
@@ -46,7 +44,7 @@ const TeamCard = ({ team, onClick }) => {
                             className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 border-2 border-white"
                             title={member.name}
                         >
-                            {getInitials(member.name)}
+                            {member?.name?.charAt(0)}
                         </div>
                     ))}
                     {remainingMembers > 0 && (
