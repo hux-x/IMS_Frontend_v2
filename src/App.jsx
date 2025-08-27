@@ -11,6 +11,7 @@ import AdminPanel from '@/sections/AdminPanel';
 import TeamDashboard from './pages/TeamDashboard';
 import ProjectProposed from '@/sections/ProjectProposed';
 import Bugs from '@/sections/Bugs';
+import MeetingDashboard from './sections/Meetings';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="teamdashboard" element={<TeamDashboard />} />
         <Route path="projectproposed" element={<ProjectProposed />} />
         <Route path="bugs" element={<Bugs />} />
+        <Route path='meetings' element={<MeetingDashboard/>}/>
 
         {/* Example dynamic nested route */}
         <Route path="teamdashboard/:teamId" element={<TeamDashboard />} />

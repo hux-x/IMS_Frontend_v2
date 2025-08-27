@@ -9,6 +9,7 @@ import {
   Shield,
   UserCircle,
   LogOut,
+  Group
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -26,6 +27,7 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Employees', icon: UserCircle, path: '/employees' },
     { name: 'Team Dashboard', icon: UserCircle, path: '/teamdashboard' },
     { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed' },
+    { name: 'Meetings', icon: Group, path: '/meetings' },
   ];
 
   return (
