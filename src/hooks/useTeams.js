@@ -4,7 +4,7 @@ import teamService from "@/apis/services/teamService";
 const useTeam = () => {
 
   const [teams, setTeams] = useState([]);
-  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [selectedTeam, setSelectedTeam] = useState(null);w
 
 
   const [loading, setLoading] = useState(false);

@@ -1,3 +1,4 @@
+// components/cards/ProjectForm.js
 import React, { useState } from "react";
 import ImageUploader from "./ImageUploader";
 import FileUploader from "./FileUploader";
@@ -5,19 +6,18 @@ import ChecklistManager from "./ChecklistManager";
 
 export default function ProjectForm({ onSubmit, onCancel, initialData }) {
   const [formData, setFormData] = useState({
-    title: initialData?.title || "",
+    projectTitle: initialData?.projectTitle || "", // Changed from title
     clientName: initialData?.clientName || "",
     clientEmail: initialData?.clientEmail || "",
     clientPhone: initialData?.clientPhone || "",
     description: initialData?.description || "",
-    location: initialData?.location || "",
     status: initialData?.status || "Proposed",
     priority: initialData?.priority || "Medium",
     startDate: initialData?.startDate || "",
     endDate: initialData?.endDate || "",
-    images: initialData?.images || [],
-    files: initialData?.files || [],
-    checklist: initialData?.checklist || []
+    projectImages: initialData?.projectImages || [], // Changed from images
+    attachments: initialData?.attachments || [], // Changed from files
+    designChecklist: initialData?.designChecklist || [] // Changed from checklist
   });
 
   const handleChange = (e) => {
@@ -27,7 +27,14 @@ export default function ProjectForm({ onSubmit, onCancel, initialData }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Add createdBy field (you'll need to get this from your auth context)
+    const submitData = {
+      ...formData,
+      createdBy: "68a3a55fef33b70995a50902" // This should come from your auth/user context
+    };
+    
+    onSubmit(submitData);
   };
 
   return (
@@ -39,8 +46,8 @@ export default function ProjectForm({ onSubmit, onCancel, initialData }) {
         <div className="space-y-2">
           <label className="block font-medium">Project Title*</label>
           <input
-            name="title"
-            value={formData.title}
+            name="projectTitle" // Changed from title
+            value={formData.projectTitle}
             onChange={handleChange}
             required
             className="w-full p-2 border rounded"
@@ -90,9 +97,10 @@ export default function ProjectForm({ onSubmit, onCancel, initialData }) {
             className="w-full p-2 border rounded"
           >
             <option value="Proposed">Proposed</option>
-            <option value="Mature">Mature</option>
-            <option value="In Progress">In Progress</option>
+            <option value="mature">Mature</option> {/* lowercase 'm' to match backend */}
+            <option value="In-Progress">In Progress</option> {/* hyphenated */}
             <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
 
@@ -146,10 +154,19 @@ export default function ProjectForm({ onSubmit, onCancel, initialData }) {
         />
       </div>
 
-      {/* Components */}
-      <ImageUploader images={formData.images} onChange={(imgs) => setFormData({...formData, images: imgs})} />
-      <FileUploader files={formData.files} onChange={(files) => setFormData({...formData, files})} />
-      <ChecklistManager checklist={formData.checklist} onChange={(checklist) => setFormData({...formData, checklist})} />
+      {/* Components - Updated prop names */}
+      <ImageUploader 
+        images={formData.projectImages} 
+        onChange={(images) => setFormData({...formData, projectImages: images})} 
+      />
+      <FileUploader 
+        files={formData.attachments} 
+        onChange={(attachments) => setFormData({...formData, attachments})} 
+      />
+      <ChecklistManager 
+        checklist={formData.designChecklist} 
+        onChange={(designChecklist) => setFormData({...formData, designChecklist})} 
+      />
 
       {/* Actions */}
       <div className="flex justify-end space-x-4">
