@@ -1,8 +1,23 @@
 import client from "@/apis/apiClient/client";
 
-// CREATE PROJECT
+// CREATE PROJECT (multipart/form-data)
 export const createProject = async (projectData) => {
-  return await client.post("/projects", projectData);
+  const formData = new FormData();
+
+  Object.keys(projectData).forEach((key) => {
+    if (Array.isArray(projectData[key])) {
+      projectData[key].forEach((item) => {
+        // if it's file list append as file, otherwise append as string
+        formData.append(key, item);
+      });
+    } else if (projectData[key] !== undefined && projectData[key] !== null) {
+      formData.append(key, projectData[key]);
+    }
+  });
+
+  return await client.post("/projects", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 };
 
 // GET ALL PROJECTS
@@ -15,9 +30,23 @@ export const getProjectById = async (projectId) => {
   return await client.get(`/projects/${projectId}`);
 };
 
-// UPDATE PROJECT
+// UPDATE PROJECT (multipart/form-data)
 export const updateProject = async (projectId, updateData) => {
-  return await client.patch(`/projects/${projectId}`, updateData);
+  const formData = new FormData();
+
+  Object.keys(updateData).forEach((key) => {
+    if (Array.isArray(updateData[key])) {
+      updateData[key].forEach((item) => {
+        formData.append(key, item);
+      });
+    } else if (updateData[key] !== undefined && updateData[key] !== null) {
+      formData.append(key, updateData[key]);
+    }
+  });
+
+  return await client.patch(`/projects/${projectId}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
 };
 
 // ADD CHECKLIST TASK
@@ -35,11 +64,13 @@ export const deleteChecklistTask = async (projectId, taskId) => {
   return await client.delete(`/projects/${projectId}/checklist/${taskId}`);
 };
 
-// GET PROJECTS WITH FILTERS (optional)
+// FILTERED PROJECTS
 export const getFilteredProjects = async (filters = {}) => {
   const queryParams = new URLSearchParams(filters).toString();
   return await client.get(`/projects/filter?${queryParams}`);
 };
+
+// DELETE PROJECT
 export const deleteProject = async (projectId) => {
   return await client.delete(`/projects/${projectId}`);
 };
