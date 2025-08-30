@@ -40,3 +40,6 @@ export const getFilteredProjects = async (filters = {}) => {
   const queryParams = new URLSearchParams(filters).toString();
   return await client.get(`/projects/filter?${queryParams}`);
 };
+export const deleteProject = async (projectId) => {
+  return await client.delete(`/projects/${projectId}`);
+};

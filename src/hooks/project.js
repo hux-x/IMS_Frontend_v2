@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import projectService from "@/apis/services/projectService";
+import { useState, useCallback, useEffect } from "react";
+import projectService from "@/apis/services/project";
 
 const useProject = () => {
   const [projects, setProjects] = useState([]);
@@ -13,6 +13,7 @@ const useProject = () => {
       setLoading(true);
       setError(null);
       const res = await projectService.getAllProjects();
+      console.log(res.data);
       setProjects(res.data);
       return res.data;
     } catch (err) {
@@ -33,6 +34,19 @@ const useProject = () => {
       return res.data;
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch project');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  const deleteProject = useCallback(async (projectId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      await projectService.deleteProject(projectId);
+      setProjects(prev => prev.filter(p => p._id !== projectId));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete project');
       throw err;
     } finally {
       setLoading(false);
@@ -175,6 +189,7 @@ const useProject = () => {
     deleteChecklistTask,
     getFilteredProjects,
     clearError,
+    deleteProject,
     
     // Setters (optional)
     setSelectedProject,

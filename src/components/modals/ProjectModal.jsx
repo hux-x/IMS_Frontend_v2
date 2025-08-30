@@ -1,3 +1,4 @@
+// components/modals/ProjectModal.js
 import React from 'react';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
@@ -9,12 +10,12 @@ export default function ProjectModal({ project, onClose }) {
         {/* Header */}
         <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-100 flex justify-between items-start">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">{project.title}</h2>
+            <h2 className="text-3xl font-bold text-gray-900">{project.projectTitle}</h2> {/* Changed from title */}
             <div className="flex items-center space-x-3 mt-2">
               <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                 project.status === 'Proposed' ? 'bg-blue-100 text-blue-800' :
-                project.status === 'Mature' ? 'bg-purple-100 text-purple-800' :
-                project.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
+                project.status === 'mature' ? 'bg-purple-100 text-purple-800' :
+                project.status === 'In-Progress' ? 'bg-yellow-100 text-yellow-800' :
                 'bg-green-100 text-green-800'
               }`}>
                 {project.status}
@@ -28,23 +29,22 @@ export default function ProjectModal({ project, onClose }) {
           </button>
         </div>
 
-        {/* Image Gallery - Now with Full Swipe Support */}
-        {project.images?.length > 0 && (
+        {/* Image Gallery */}
+        {project.projectImages?.length > 0 && ( // Changed from images to projectImages
           <div className="relative">
             <Carousel 
-              showThumbs={project.images.length > 1}
+              showThumbs={project.projectImages.length > 1}
               showStatus={false}
               infiniteLoop
               autoPlay={false}
               emulateTouch
               swipeable
-              dynamicHeight
               className="rounded-t-lg overflow-hidden"
             >
-              {project.images.map((img, i) => (
+              {project.projectImages.map((img, i) => (
                 <div key={i} className="h-[400px] bg-gray-50 flex items-center justify-center">
                   <img 
-                    src={URL.createObjectURL(img)} 
+                    src={img} // Direct URL
                     alt={`Project image ${i+1}`} 
                     className="max-h-full max-w-full object-contain"
                   />
@@ -52,7 +52,7 @@ export default function ProjectModal({ project, onClose }) {
               ))}
             </Carousel>
             <div className="absolute bottom-4 right-4 bg-white/90 px-3 py-1 rounded-full text-sm font-medium shadow-sm">
-              {project.images.length} {project.images.length > 1 ? 'images' : 'image'}
+              {project.projectImages.length} {project.projectImages.length > 1 ? 'images' : 'image'}
             </div>
           </div>
         )}
@@ -63,28 +63,28 @@ export default function ProjectModal({ project, onClose }) {
             {/* Main Content */}
             <div className="lg:col-span-2">
               <div className="prose max-w-none">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">Design Vision</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">Project Description</h3>
                 <p className="text-gray-700 leading-relaxed">
                   {project.description || 'No description provided yet.'}
                 </p>
               </div>
 
               {/* Checklist */}
-              {project.checklist?.length > 0 && (
+              {project.designChecklist?.length > 0 && ( // Changed from checklist to designChecklist
                 <div className="mt-10">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Design Milestones</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Design Checklist</h3>
                   <div className="space-y-3">
-                    {project.checklist.map((item, i) => (
+                    {project.designChecklist.map((item, i) => (
                       <div key={i} className="flex items-start p-4 bg-gray-50 rounded-lg">
                         <input
                           type="checkbox"
-                          checked={item.done}
+                          checked={item.isCompleted} // Changed from done to isCompleted
                           readOnly
                           className="mt-1 h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <div className="ml-3">
-                          <label className={`block ${item.done ? 'line-through text-gray-500' : 'text-gray-700'}`}>
-                            {item.text}
+                          <label className={`block ${item.isCompleted ? 'line-through text-gray-500' : 'text-gray-700'}`}>
+                            {item.task} {/* Changed from text to task */}
                           </label>
                         </div>
                       </div>
@@ -101,22 +101,26 @@ export default function ProjectModal({ project, onClose }) {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Details</h3>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-500">Location</p>
-                    <p className="text-gray-900 font-medium">{project.location || 'To be determined'}</p>
-                  </div>
-                  <div>
                     <p className="text-sm font-medium text-gray-500">Timeline</p>
                     <div className="flex items-center space-x-4 mt-1">
                       <div>
                         <p className="text-xs text-gray-500">Start</p>
-                        <p className="text-gray-900 font-medium">{project.startDate || 'TBD'}</p>
+                        <p className="text-gray-900 font-medium">
+                          {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'TBD'}
+                        </p>
                       </div>
                       <div className="h-4 w-px bg-gray-300"></div>
                       <div>
                         <p className="text-xs text-gray-500">Completion</p>
-                        <p className="text-gray-900 font-medium">{project.endDate || 'TBD'}</p>
+                        <p className="text-gray-900 font-medium">
+                          {project.endDate ? new Date(project.endDate).toLocaleDateString() : 'TBD'}
+                        </p>
                       </div>
                     </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Priority</p>
+                    <p className="text-gray-900 font-medium">{project.priority}</p>
                   </div>
                 </div>
               </div>
@@ -138,8 +142,34 @@ export default function ProjectModal({ project, onClose }) {
                       {project.clientEmail || 'Not provided'}
                     </a>
                   </div>
+                  {project.clientPhone && (
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Phone</p>
+                      <p className="text-gray-900 font-medium">{project.clientPhone}</p>
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Attachments */}
+              {project.attachments?.length > 0 && ( // Changed from files to attachments
+                <div className="bg-gray-50 p-6 rounded-xl">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h3>
+                  <div className="space-y-2">
+                    {project.attachments.map((file, index) => (
+                      <a
+                        key={index}
+                        href={file}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-blue-600 hover:text-blue-800 truncate"
+                      >
+                        📄 Attachment {index + 1}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

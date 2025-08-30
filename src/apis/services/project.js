@@ -5,9 +5,10 @@ import {
   updateProject,
   addChecklistTask,
   toggleChecklistTask,
+  deleteProject,
   deleteChecklistTask,
   getFilteredProjects
-} from "@/apis/endpoints/projects";
+} from "@/apis/endpoints/project";
 
 const projectService = {
   // CREATE PROJECT
@@ -106,6 +107,9 @@ const projectService = {
       Object.entries(filters).filter(([_, v]) => v !== null && v !== undefined && v !== "")
     );
     return await getFilteredProjects(validFilters);
+  },
+  deleteProject: async (projectId) => {
+    return await deleteProject(projectId);
   }
 };
 
