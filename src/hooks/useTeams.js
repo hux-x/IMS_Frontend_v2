@@ -22,6 +22,20 @@ const useTeam = () => {
       setLoading(false);
     }
   }, []);
+  const [employees, setEmployees] = useState([]);
+
+  const getEmployees = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await teamService.getAllEmployees();
+      setEmployees(res.data.employees);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
 
   const getTeamById = useCallback(async (teamId) => {
@@ -148,7 +162,7 @@ const useTeam = () => {
   }, []);
 
   useEffect(() => {
-    getAllTeams();
+    Promise.all([getAllTeams(), getEmployees()]);
   }, [getAllTeams]);
 
   return {
@@ -166,7 +180,8 @@ const useTeam = () => {
     addTeamMember,
     removeTeamMember,
     updateMemberRole,
-    getTeamLead
+    getTeamLead,
+    employees
   };
 };
 

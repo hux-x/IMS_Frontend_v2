@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Users,
   Plus,
@@ -12,21 +12,47 @@ import {
 } from "lucide-react";
 import TaskCard from "@/components/cards/TaskCard";
 import CreateTask from "@/components/modals/createTask";
-import { mockTeamData } from "@/mockData/team";
+import teamService from "@/apis/services/teamService";
+import { useParams } from "react-router-dom";
+import dashboardService from "@/apis/services/dashboardService";
 
 const TeamDashboard = () => {
-  const [teamData, setTeamData] = useState(mockTeamData);
+  const [teamData, setTeamData] = useState(null); // no dummy data
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const { teamId } = useParams();
 
-  const { team } = teamData;
+  useEffect(() => {
+    const getTeamDashboard = async () => {
+      try {
+        const res = await dashboardService.getTeamDashboard(teamId);
+        console.log(res.data.team)
+        if (res?.data?.team) {
+          setTeamData(res.data.team);
+        }
+      } catch (error) {
+        console.error("Error fetching team:", error);
+      }
+    };
+    getTeamDashboard();
+  }, [teamId]);
 
-  // Filter tasks based on search and filters
+  if (!teamData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600">Loading team data...</p>
+      </div>
+    );
+  }
+
+  const { team } = { team: teamData };
+
+  // Filter tasks
   const filteredTasks = team.teamTasks.filter((task) => {
     const matchesSearch =
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task?.title?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || task.status === statusFilter;
@@ -36,7 +62,7 @@ const TeamDashboard = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Calculate team statistics
+  // Stats
   const totalTasks = team.teamTasks.length;
   const completedTasks = team.teamTasks.filter(
     (task) => task.status === "completed"
@@ -52,6 +78,7 @@ const TeamDashboard = () => {
     (member) => member.available
   ).length;
 
+  // Task Handlers
   const handleTaskUpdate = (updatedTask) => {
     console.log("Task updated:", updatedTask);
   };
@@ -61,31 +88,24 @@ const TeamDashboard = () => {
   };
 
   const handleCreateTask = (newTaskData) => {
-    // Convert the CreateTask form data to match our task schema
     const newTask = {
-      _id: `task${Date.now()}`, // Generate a temporary ID
-      title: newTaskData.description, // Using description as title since form doesn't have title
+      _id: `task${Date.now()}`,
+      title: newTaskData.description,
       description: newTaskData.description,
-      status: newTaskData.status.toLowerCase().replace(' ', ''), // Convert "In Progress" to "inProgress"
+      status: newTaskData.status.toLowerCase().replace(" ", ""),
       priority: newTaskData.priority.toLowerCase(),
       assignedTo: { name: newTaskData.assignee },
       deadline: newTaskData.deadline ? `${newTaskData.deadline}T00:00:00Z` : null,
       todoChecklist: newTaskData.checklist
-        .filter(item => item.trim() !== '')
-        .map(item => ({ text: item, completed: false })),
-      attachments: newTaskData.files || []
+        .filter((item) => item.trim() !== "")
+        .map((item) => ({ text: item, completed: false })),
+      attachments: newTaskData.files || [],
     };
 
-    // Add the new task to the team data
-    setTeamData(prev => ({
+    setTeamData((prev) => ({
       ...prev,
-      team: {
-        ...prev.team,
-        teamTasks: [...prev.team.teamTasks, newTask]
-      }
+      teamTasks: [...prev.teamTasks, newTask],
     }));
-
-    console.log("Task created:", newTask);
   };
 
   return (
@@ -97,7 +117,7 @@ const TeamDashboard = () => {
             <h1 className="text-2xl font-bold text-gray-900">{team.name}</h1>
             <p className="text-gray-600">Led by {team.teamLead.name}</p>
           </div>
-          <button 
+          <button
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
             onClick={() => setIsCreateTaskOpen(true)}
           >
@@ -301,7 +321,7 @@ const TeamDashboard = () => {
 
       {/* Create Task Modal */}
       {isCreateTaskOpen && (
-        <CreateTask 
+        <CreateTask
           isOpen={isCreateTaskOpen}
           onClose={() => setIsCreateTaskOpen(false)}
           onCreate={handleCreateTask}

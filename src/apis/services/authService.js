@@ -7,6 +7,7 @@ import {
     resetPassword,
     forgotPassword,
     deleteEmployee,
+    getAllEmployees,
 } from "@/apis/endpoints/auth";
 import { storeToken } from "@/apis/token/tokenStorage";
 import { storeuserId } from "@/apis/localStorage/idStorage";
@@ -66,5 +67,6 @@ const authService = {
     deleteEmployee: async (id) => {
         return await deleteEmployee(id);
     },
+    
 };
 export default authService;

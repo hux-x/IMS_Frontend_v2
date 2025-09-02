@@ -27,6 +27,9 @@ export const getFilteredEmployees = async(limit,offset,role=null,position=null,s
     return await client.get(`/employees/filtered?limit=${limit}&offset=${offset}&role=${role}&position=${position}&status=${status}&available=${available}`);
 
 }
+export const getAllEmployees = async()=>{
+    return await client.get(`/employees/all`);
+}
 
 export const resetPassword = async(password,candidatePassword)=>{
     return await client.post("/employees/reset-password",{password,candidatePassword});

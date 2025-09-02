@@ -7,7 +7,7 @@ import {createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam, addTeamMem
   getAllTeams: async () => {
     return await getAllTeams();
   },
-  getTeamById: async ({ teamId }) => {
+  getTeamById: async ( teamId ) => {
     return await getTeamById(teamId);
   },
   updateTeam: async ({ teamId, name, teamLead }) => {
@@ -31,5 +31,6 @@ import {createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam, addTeamMem
   getTeamLead: async ({ teamId }) => {
     return await getTeamLead(teamId);
   },
+  
 };
 export default teamService

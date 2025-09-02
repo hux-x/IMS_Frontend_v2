@@ -4,9 +4,15 @@ import { BarChart3, Users, ShoppingCart, DollarSign, CheckCircle, Clock, UserChe
 import TaskCard from "@/components/cards/TaskCard";
 import TeamCard from "@/components/cards/TeamCard";
 import useDashboard from "@/hooks/useDashboard";
+import useTasks from "@/hooks/useTask";
 
 const Dashboard = () => {
   const { dashboard, loading, error } = useDashboard();
+    const {
+    handleUpdateTask,
+    handleDeleteTask
+  } = useTasks()
+  console.log(dashboard)
   console.log(dashboard);
   
 
@@ -105,7 +111,7 @@ const Dashboard = () => {
         </h2>
         {myTasks.length > 0 ? (
           myTasks.map((task, index) => (
-            <TaskCard key={index} task={task} />
+            <TaskCard key={task._id} task={task} onDelete={handleDeleteTask} onUpdate={handleDeleteTask} />
           ))
         ) : (
           <p className="text-gray-500">No incomplete tasks found.</p>

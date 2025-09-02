@@ -30,13 +30,14 @@ export const reassignTask = async (taskId, newAssigneeId) => {
 export const fetchAssignees = async()=>{
     return await client.get('/tasks/assignees');
 }
-export const updateTask = async(taskId,title=null,description=null,attachments=null,deadline=null,priority=null,todoChecklist=null)=>{
+export const updateTask = async(taskId,title=null,description=null,attachments=null,deadline=null,priority=null,todoChecklist=null,status=null)=>{
     const updateData = {}
     if (title !== null) updateData.title = title;
     if (description !== null) updateData.description = description;
     if (attachments !== null) updateData.attachments = attachments;
     if (deadline !== null) updateData.deadline = deadline;
     if (priority !== null) updateData.priority = priority;
+    if(status!== null) updateData.status = status
     if(todoChecklist!== null) updateData.todoChecklist = todoChecklist
     console.log(updateData)
     
@@ -49,7 +50,7 @@ export const filteredTasks = async(queryParams)=>{
 }
 
 export const getAllTasks = async(limit,offset)=>{
-    return await client.get(`/tasks/all?limit=${limit}&offset=${offset}`);
+    return await client.get(`/tasks/adminTasks?limit=${limit}&offset=${offset}`);
 }
 
 export const getMyTasks = async(limit,offset)=>{

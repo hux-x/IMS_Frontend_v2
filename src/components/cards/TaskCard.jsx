@@ -15,7 +15,9 @@ const priorityStyles = {
   "low": { text: "Low", bg: "bg-gray-100", textColor: "text-gray-800" }
 };
 
-const TaskCard = ({ task, onUpdate, onDelete }) => {
+const TaskCard = ({ task,onUpdate,onDelete }) => {
+  console.log('render')
+
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   
@@ -116,4 +118,4 @@ const TaskCard = ({ task, onUpdate, onDelete }) => {
   );
 };
 
-export default TaskCard;
+export default React.memo(TaskCard);

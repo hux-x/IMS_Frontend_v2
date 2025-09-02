@@ -1,183 +1,224 @@
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 import taskService from "@/apis/services/taskService";
-const PAGE_SIZE = 15;
-const useTask = () => {
-
-  const [allTasks, setAllTasks] = useState([]);
-  const [myTasks, setMyTasks] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState({
-    type: "allTasks",               //enum: [allTasks,myTasks] 
-    filters: [],
-    tasks: [],
+ const useTasks = () => {
+  const LIMIT = 9;
+  const PAGE_SIZE = 9
+  const [tasks, setTasks] = useState([]);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [paginationParams, setPaginationParams] = useState({
+    isRefresh: true,
+    pageNumber: 1,
+    maxPages: 1
   });
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    status: 'All',
+    priority: 'All',
+    assignee: 'All'
+  });
+  const [assignees, setAssignees] = useState([]);
+  const queryRef = useRef();
 
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const [paginationParams,setPaginationParams] = useState({taskType:'all',page:1,isRefresh:true})
-  const [maxPages,setMaxPages] = useState();
-  const [isRefreshing,setIsRefreshing] = useState(true) //will be used for shimmers (when navigating to the next page)
-
-
-  const onRefresh = useCallback(()=>{
-    if(!loading){
-      setPaginationParams((prev)=>{
-       return{
-        taskType:prev.taskType,
-        page:1,
-        isRefresh:true
-       } 
-      })
+  const getTasks = async (pageNumber = 1) => {
+    setLoading(true);
+    try {
+      const offset = (pageNumber - 1) * PAGE_SIZE;
+      const res = await taskService.getAllTasks(LIMIT, offset);
+      console.log(res.data)
+      setTasks(res.data.tasks);
+      setPaginationParams({
+        isRefresh: false,
+        pageNumber: pageNumber,
+        maxPages: Math.ceil(res.data.pagination.totalTasks / PAGE_SIZE)
+      });
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
     }
-  })
+  };
 
-  const navigateToNextPage = useCallback((taskType)=>{
+  const handleUpdateTask = useCallback(async (taskId, updatedTask) => {
+  
+    try {
+      
+      const res = await taskService.updateTask(updatedTask._id, updatedTask);
+    
+      setTasks(prev => 
+        prev.map(task => task._id === taskId ? res.data.task : task)
+      );
+    } catch (err) {
+      console.log(err);
+    }
+  },[])
 
-    if(!loading && paginationParams.page < maxPages){
-      setPaginationParams((prev)=>{
+  const handleDeleteTask = useCallback(async (taskId) => {
+    try {
+      const res = await taskService.deleteTask(taskId);
+      console.log(res)
+      setTasks(prev => prev.filter(task => task._id !== taskId));
+    } catch (err) {
+      console.log(err);
+    }
+  },[])
+
+  const getFilteredTasksFromTheServer = useCallback(async (queryParams = {}) => {
+    setLoading(true);
+    try {
+      const response = await taskService.filteredTasks(queryParams);
+      if (response) {
+        setTasks(response?.data?.tasks || []);
+        setPaginationParams(prev => ({
+          ...prev,
+          isRefresh: false,
+          maxPages: Math.ceil((response?.data?.pagination?.total || 0) / PAGE_SIZE)
+        }));
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setLoading(false);
+    }
+  },[])
+
+  // Helper function to get date ranges
+  const getDateRange = (type) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    switch (type) {
+      case 'dueToday':
         return {
-          taskType: taskType,
-          page: prev.page+1,
-          isRefresh: true
-        }
-      })
+          deadlineStart: today.toISOString(),
+          deadlineEnd: tomorrow.toISOString()
+        };
+      case 'dueThisWeek':
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7); // Next Sunday
+        return {
+          deadlineStart: startOfWeek.toISOString(),
+          deadlineEnd: endOfWeek.toISOString()
+        };
+      case 'overdue':
+        return {
+          deadlineEnd: today.toISOString()
+        };
+      default:
+        return {};
+    }
+  };
+
+  // Handle filter changes
+  const applyFilters = useCallback(() => {
+    const queryParams = {};
+    
+    // Add status filter - handle special date-based statuses
+    if (filters.status !== 'All') {
+      switch (filters.status) {
+        case 'dueToday':
+        case 'dueThisWeek':
+        case 'overdue':
+          // Add date range filters
+          Object.assign(queryParams, getDateRange(filters.status));
+          break;
+        default:
+          // Regular status filter
+          queryParams.status = filters.status;
+      }
     }
     
-  })
-
-  const navigateToPreviousPage = useCallback(()=>{
-      if(!loading && !paginationParams.page <= 1){
-      setPaginationParams((prev)=>{
-        return {
-          taskType: prev.taskType,
-          page: prev.page-1,
-          isRefresh: true
-        }
-      })
+    // Add priority filter
+    if (filters.priority !== 'All') {
+      queryParams.priority = filters.priority;
     }
-  })
 
-
-  const getAllTasks = useCallback(async (limit = 10, offset = 0) => { //for admin -- fetches all available in the database 
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await taskService.getAllTasks(limit, offset)
-      console.log(res)
-      setAllTasks(res.data);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
+    // Add assignee filter
+    if (filters.assignee !== 'All') {
+      queryParams.assignedTo = filters.assignee;
     }
-  }, []);
 
-  const getMyTasks = useCallback(async (limit = 10, offset = 0) => { // all tasks but for employee -- fethces all tasks of that employee 
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await taskService.getMyTasks(limit, offset);
-      console.log(res)
-      setMyTasks(res.data);
-      let pages = 0;
-      if(res.data.total%PAGE_SIZE == 0){
-        pages = res.data.total/PAGE_SIZE
-      }else{
-        pages = res.data.total/PAGE_SIZE + 1;
-      }
-      setMaxPages(pages)
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
+    // Add pagination
+    queryParams.limit = LIMIT;
+    queryParams.offset = (paginationParams.pageNumber - 1) * PAGE_SIZE;
+
+    // Apply filters
+    const hasFilters = filters.status !== 'All' || filters.priority !== 'All' || filters.assignee !== 'All';
+    if (hasFilters) {
+      getFilteredTasksFromTheServer(queryParams);
+    } else {
+      getTasks(paginationParams.pageNumber);
     }
-  }, []);
+  }, [filters.status, filters.priority, filters.assignee, paginationParams.pageNumber]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const addTask = useCallback(async (task) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError(null);
       const res = await taskService.createTask(task);
-      setAllTasks(prev => [...prev, res.data]);
-      if (task.assignedToMe) setMyTasks(prev => [...prev, res.data]);
+      // Refresh the current view to show the new task
+      applyFilters();
     } catch (err) {
-      setError(err);
+      console.log(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyFilters]);
 
-  const updateTask = useCallback(async (taskId, updates) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await taskService.updateTask(taskId, updates);
-      const updateList = list => list.map(t => t.id === taskId ? res.data : t);
-      setAllTasks(updateList);
-      setMyTasks(updateList);
-      setAssignedTasks(updateList);
-      setBacklogTasks(updateList);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const deleteTask = useCallback(async (taskId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await taskService.deleteTask(taskId);
-      const filterList = list => list.filter(t => t.id !== taskId);
-      setAllTasks(filterList);
-      setMyTasks(filterList);
-      setAssignedTasks(filterList);
-      setBacklogTasks(filterList);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const getFilteredTasks = useCallback(async ( limit = 10, offset = 0, status = null, priority = null,type ) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await taskService.filteredTasks(limit, offset, status, priority);
-      setFilteredTasks({
-        type: type,
-        filters: [status, priority],
-        tasks: res.data.tasks,
-      });
-      setPaginationParams((prev)=>{
-        return {
-
-        }
-      })
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [filteredTasks.filters, filteredTasks.type, paginationParams.taskType,paginationParams.page]);
-  
-
-  return {
-    allTasks,
-    myTasks,
-    loading,
-    error,
-    filteredTasks,
-    getAllTasks,
-    getMyTasks,
-    addTask,
-    updateTask,
-    deleteTask,
-    getFilteredTasks
+  // Pagination handlers
+  const goToFirstPage = () => {
+    setPaginationParams(prev => ({ ...prev, pageNumber: 1 }));
   };
-};
 
-export default useTask;
+  const goToPreviousPage = () => {
+    if (paginationParams.pageNumber > 1) {
+      setPaginationParams(prev => ({ ...prev, pageNumber: prev.pageNumber - 1 }));
+    }
+  };
+
+  const goToNextPage = () => {
+    if (paginationParams.pageNumber < paginationParams.maxPages) {
+      setPaginationParams(prev => ({ ...prev, pageNumber: prev.pageNumber + 1 }));
+    }
+  };
+
+
+  useEffect(() => {
+    // Get assignees on component mount
+    const getAssignees = async () => {
+      try {
+        const res = await taskService.getAssigneesForFilteration();
+        setAssignees(res?.data?.assignees || []);
+      } catch (error) {
+        alert('error fetching assignees');
+      }
+    };
+    getAssignees();
+    
+    setPaginationParams(prev => ({ ...prev, pageNumber: 1 }));
+  }, []);
+
+
+  return {tasks,
+    loading,
+    showCreateTask,
+    setShowCreateTask,
+    filters,
+    setFilters,
+    assignees,
+    paginationParams,
+    goToFirstPage,
+    goToPreviousPage,
+    goToNextPage,
+    addTask,
+    handleUpdateTask,
+    handleDeleteTask
+  }
+}
+export default useTasks;

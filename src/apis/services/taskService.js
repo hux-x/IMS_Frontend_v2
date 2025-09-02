@@ -10,6 +10,7 @@ import {
     fetchAssignees,
     getAssigneesForFiltering
 } from "@/apis/endpoints/tasks";
+import { getAllEmployees } from "../endpoints/auth";
 
 const taskService = {
     getAllTasks: async (limit = 10, offset = 0) => {
@@ -27,8 +28,8 @@ const taskService = {
         return await createTask(assignedTo, title, description, attachments, deadline, startTime, teamId, priority,todoChecklist);
     },
 
-    updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null }) => {
-        return await updateTask(taskId, title, description, attachments, deadline, priority);
+    updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null,todoChecklist=null,status=null }) => {
+        return await updateTask(taskId,title,description,attachments,deadline,priority,todoChecklist,status);
     },
 
     deleteTask: async (taskId) => {
@@ -67,6 +68,9 @@ const taskService = {
     },
     getAssigneesForFilteration: async()=>{
         return await getAssigneesForFiltering();
+    },
+    getAllEmployeesForTeam: async () => {
+        return await getAllEmployees();
     }
 };
 

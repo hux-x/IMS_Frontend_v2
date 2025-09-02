@@ -1,6 +1,7 @@
 // src/components/team/TeamCard.jsx
 import React from 'react';
-import { FaCrown, FaUsers, FaEllipsisV } from 'react-icons/fa';
+import { FaCrown, FaUsers, FaEllipsisV, FaExternalLinkAlt } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const TeamCard = ({ team, onClick }) => {
     const getInitials = (name) => {
@@ -9,24 +10,37 @@ const TeamCard = ({ team, onClick }) => {
     const membersArray = Array.isArray(team.members) ? team.members : [];
     const membersToShow = membersArray.slice(0, 3);
     const remainingMembers = membersArray.length - membersToShow.length;
-    console.log(team)
 
     return (
-        <div
+        <div 
             className="bg-white rounded-lg shadow-md p-6 flex flex-col cursor-pointer hover:shadow-lg transition-shadow duration-200 ease-in-out"
             onClick={() => onClick(team)}
         >
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 w-full">
                 <div
                     className="w-16 h-16 rounded-full flex items-center justify-center text-white text-3xl font-bold"
                     style={{ backgroundColor: team.color || '#4A90E2' }}
                 >
                     {team?.name?.charAt(0)}
                 </div>
-                <div className="text-sm px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
-                    {membersArray.length} members
+
+                <div className="flex items-center gap-2">
+                    <div className="text-sm px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium">
+                        {membersArray.length} members
+                    </div>
+
+                    {/* External link icon */}
+                    <Link 
+                        to={`/teamdashboard/${team.id}`} 
+                        onClick={(e) => e.stopPropagation()} // prevent card click
+                        className="text-gray-500 hover:text-gray-700"
+                        title="View team details"
+                    >
+                        <FaExternalLinkAlt size={18} />
+                    </Link>
                 </div>
             </div>
+
             <h3 className="text-xl font-semibold text-gray-800 mb-2">{team.name}</h3>
             <p className="text-sm text-gray-500 mb-4 flex-grow">{team.description}</p>
 
