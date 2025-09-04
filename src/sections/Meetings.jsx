@@ -1,142 +1,94 @@
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, AlertTriangle, RefreshCw } from 'lucide-react';
+import useMeetings from '@/hooks/useMeetings';
 import MeetingStats from '@/components/meetings/Meetingstats';
 import MeetingFilters from '@/components/meetings/MeetingFilters';
 import MeetingList from '@/components/meetings/MeetingList';
 import MeetingModals from '@/components/modals/Meetings';
 
 const MeetingDashboard = () => {
-  const [meetings, setMeetings] = useState([]);
-  const [filteredMeetings, setFilteredMeetings] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const {
+    meetings,
+    employees,
+    loading,
+    error,
+    filters,
+    pagination,
+    createMeeting,
+    updateMeeting,
+    deleteMeeting,
+    applyFilters,
+    clearFilters,
+    refreshMeetings,
+    getMeetingStats,
+    loadMore
+  } = useMeetings();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [currentMeeting, setCurrentMeeting] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterDate, setFilterDate] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Mock data initialization
-  useEffect(() => {
-    // Mock employees data
-    const mockEmployees = [
-      { _id: '1', name: 'John Doe', email: 'john@company.com' },
-      { _id: '2', name: 'Jane Smith', email: 'jane@company.com' },
-      { _id: '3', name: 'Mike Johnson', email: 'mike@company.com' },
-      { _id: '4', name: 'Sarah Wilson', email: 'sarah@company.com' }
-    ];
-    setEmployees(mockEmployees);
-
-    // Mock meetings data
-    const mockMeetings = [
-      {
-        _id: '1',
-        title: 'Weekly Team Standup',
-        description: 'Weekly sync for development team',
-        startTime: '2025-08-29T09:00:00Z',
-        endTime: '2025-08-29T10:00:00Z',
-        status: 'planned',
-        employees: [mockEmployees[0], mockEmployees[1]],
-        createdBy: mockEmployees[0],
-        clients: [{ name: 'ABC Corp', email: 'contact@abc.com' }]
-      },
-      {
-        _id: '2',
-        title: 'Project Review',
-        description: 'Review Q3 project deliverables',
-        startTime: '2025-08-30T14:00:00Z',
-        endTime: '2025-08-30T15:30:00Z',
-        status: 'completed',
-        employees: [mockEmployees[0], mockEmployees[2], mockEmployees[3]],
-        createdBy: mockEmployees[0],
-        clients: []
-      },
-      {
-        _id: '3',
-        title: 'Client Presentation',
-        description: 'Present final designs to client',
-        startTime: '2025-08-28T16:00:00Z',
-        endTime: '2025-08-28T17:00:00Z',
-        status: 'cancelled',
-        employees: [mockEmployees[1], mockEmployees[3]],
-        createdBy: mockEmployees[1],
-        clients: [{ name: 'XYZ Inc', email: 'info@xyz.com' }]
+  const handleCreateMeeting = async (formData) => {
+    setActionLoading(true);
+    try {
+      const result = await createMeeting(formData);
+      if (result.success) {
+        setShowCreateModal(false);
+        // Success notification would go here
+        alert('Meeting created successfully!');
+      } else {
+        // Error notification would go here
+        alert(`Error: ${result.error}`);
       }
-    ];
-    setMeetings(mockMeetings);
-  }, []);
-
-  // Filter meetings based on search and filter criteria
-  useEffect(() => {
-    let filtered = meetings;
-
-    // Apply search filter
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(meeting =>
-        meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        meeting.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        meeting.employees.some(emp => emp.name.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-
-    // Apply status filter
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(meeting => meeting.status === filterStatus);
-    }
-
-    // Apply date filter
-    if (filterDate) {
-      filtered = filtered.filter(meeting => {
-        const meetingDate = new Date(meeting.startTime).toISOString().split('T')[0];
-        return meetingDate === filterDate;
-      });
-    }
-
-    setFilteredMeetings(filtered);
-  }, [meetings, filterStatus, filterDate, searchQuery]);
-
-  // Meeting CRUD operations
-  const handleCreateMeeting = (formData) => {
-    const newMeeting = {
-      _id: Date.now().toString(),
-      ...formData,
-      startTime: new Date(formData.startTime).toISOString(),
-      endTime: new Date(formData.endTime).toISOString(),
-      employees: employees.filter(emp => formData.employees.includes(emp._id)),
-      createdBy: employees[0] // Mock current user
-    };
-    setMeetings([...meetings, newMeeting]);
-    setShowCreateModal(false);
-    alert('Meeting created successfully!');
-  };
-
-  const handleUpdateMeeting = (formData) => {
-    const updatedMeetings = meetings.map(meeting =>
-      meeting._id === currentMeeting._id
-        ? {
-            ...meeting,
-            ...formData,
-            startTime: new Date(formData.startTime).toISOString(),
-            endTime: new Date(formData.endTime).toISOString(),
-            employees: employees.filter(emp => formData.employees.includes(emp._id))
-          }
-        : meeting
-    );
-    setMeetings(updatedMeetings);
-    setShowEditModal(false);
-    setCurrentMeeting(null);
-    alert('Meeting updated successfully!');
-  };
-
-  const handleDeleteMeeting = (meetingId) => {
-    if (window.confirm('Are you sure you want to delete this meeting?')) {
-      setMeetings(meetings.filter(meeting => meeting._id !== meetingId));
-      alert('Meeting deleted successfully!');
+    } catch (err) {
+      alert('Failed to create meeting');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  // Modal handlers
+  const handleUpdateMeeting = async (formData) => {
+    if (!currentMeeting) return;
+    
+    setActionLoading(true);
+    try {
+      const result = await updateMeeting(currentMeeting._id, formData);
+      if (result.success) {
+        setShowEditModal(false);
+        setCurrentMeeting(null);
+        alert('Meeting updated successfully!');
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Failed to update meeting');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteMeeting = async (meetingId) => {
+    if (!window.confirm('Are you sure you want to delete this meeting?')) {
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const result = await deleteMeeting(meetingId);
+      if (result.success) {
+        alert('Meeting deleted successfully!');
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Failed to delete meeting');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleViewMeeting = (meeting) => {
     setCurrentMeeting(meeting);
     setShowViewModal(true);
@@ -147,11 +99,36 @@ const MeetingDashboard = () => {
     setShowEditModal(true);
   };
 
-  const handleClearFilters = () => {
-    setFilterStatus('all');
-    setFilterDate('');
-    setSearchQuery('');
+  const handleFilterChange = (filterType, value) => {
+    applyFilters({ [filterType]: value });
   };
+
+  const handleClearFilters = () => {
+    clearFilters();
+  };
+
+  const stats = getMeetingStats();
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-sm max-w-md w-full mx-4">
+          <div className="flex items-center gap-3 text-red-600 mb-4">
+            <AlertTriangle size={24} />
+            <h2 className="text-lg font-semibold">Error Loading Meetings</h2>
+          </div>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={refreshMeetings}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={16} />
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -163,38 +140,111 @@ const MeetingDashboard = () => {
               <h1 className="text-3xl font-bold text-gray-900">Meeting Management</h1>
               <p className="text-gray-600 mt-1">Create, manage, and track all your meetings</p>
             </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
-            >
-              <Plus size={20} />
-              New Meeting
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={refreshMeetings}
+                disabled={loading}
+                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100"
+                title="Refresh meetings"
+              >
+                <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+              </button>
+              <button
+                onClick={() => setShowCreateModal(true)}
+                disabled={loading || actionLoading}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2 font-medium"
+              >
+                <Plus size={20} />
+                New Meeting
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
           <MeetingFilters
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            filterDate={filterDate}
-            setFilterDate={setFilterDate}
+            searchQuery={filters.searchQuery}
+            setSearchQuery={(value) => handleFilterChange('searchQuery', value)}
+            filterStatus={filters.status}
+            setFilterStatus={(value) => handleFilterChange('status', value)}
+            filterDate={filters.date}
+            setFilterDate={(value) => handleFilterChange('date', value)}
             onClearFilters={handleClearFilters}
+            loading={loading}
           />
         </div>
 
         {/* Meeting Stats */}
-        <MeetingStats meetings={meetings} />
+        <MeetingStats 
+          meetings={meetings} 
+          stats={stats}
+          loading={loading}
+        />
 
         {/* Meetings List */}
         <MeetingList
-          meetings={filteredMeetings}
-          totalMeetings={meetings.length}
+          meetings={meetings}
+          totalMeetings={stats.total}
+          loading={loading}
+          pagination={pagination}
           onView={handleViewMeeting}
           onEdit={handleEditMeeting}
           onDelete={handleDeleteMeeting}
+          onLoadMore={loadMore}
+          actionLoading={actionLoading}
         />
+
+        {/* Load More Button */}
+        {pagination.hasMore && !loading && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={loadMore}
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+            >
+              Load More Meetings
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && meetings.length === 0 && (
+          <div className="flex justify-center items-center py-12">
+            <div className="flex items-center gap-3 text-gray-600">
+              <RefreshCw size={20} className="animate-spin" />
+              <span>Loading meetings...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && meetings.length === 0 && !error && (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <Plus size={48} className="mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No meetings found</h3>
+            <p className="text-gray-600 mb-4">
+              {Object.values(filters).some(f => f && f !== 'all') 
+                ? 'No meetings match your current filters. Try adjusting your search criteria.'
+                : 'Get started by creating your first meeting.'
+              }
+            </p>
+            {Object.values(filters).some(f => f && f !== 'all') ? (
+              <button
+                onClick={handleClearFilters}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Clear Filters
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+              >
+                Create First Meeting
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Modals */}
         <MeetingModals
@@ -211,6 +261,7 @@ const MeetingDashboard = () => {
             setCurrentMeeting(null);
           }}
           onCloseView={() => setShowViewModal(false)}
+          loading={actionLoading}
         />
       </div>
     </div>

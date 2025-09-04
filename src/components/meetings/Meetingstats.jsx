@@ -1,58 +1,92 @@
 import React from 'react';
-import { Calendar, Clock, Users, X } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle, Clock, Users, TrendingUp } from 'lucide-react';
 
-const MeetingStats = ({ meetings }) => {
-  const stats = [
-    { 
-      label: 'Total Meetings', 
-      count: meetings.length, 
-      color: 'blue', 
-      icon: Calendar 
+const MeetingStats = ({ meetings = [], stats = {}, loading = false }) => {
+  const statCards = [
+    {
+      title: 'Total Meetings',
+      value: stats.total || 0,
+      icon: Calendar,
+      color: 'bg-blue-500',
+      lightColor: 'bg-blue-50',
+      textColor: 'text-blue-600'
     },
-    { 
-      label: 'Planned', 
-      count: meetings.filter(m => m.status === 'planned').length, 
-      color: 'yellow', 
-      icon: Clock 
+    {
+      title: 'Planned',
+      value: stats.planned || 0,
+      icon: Clock,
+      color: 'bg-yellow-500',
+      lightColor: 'bg-yellow-50',
+      textColor: 'text-yellow-600'
     },
-    { 
-      label: 'Completed', 
-      count: meetings.filter(m => m.status === 'completed').length, 
-      color: 'green', 
-      icon: Users 
+    {
+      title: 'Completed',
+      value: stats.completed || 0,
+      icon: CheckCircle,
+      color: 'bg-green-500',
+      lightColor: 'bg-green-50',
+      textColor: 'text-green-600'
     },
-    { 
-      label: 'Cancelled', 
-      count: meetings.filter(m => m.status === 'cancelled').length, 
-      color: 'red', 
-      icon: X 
+    {
+      title: 'Cancelled',
+      value: stats.cancelled || 0,
+      icon: XCircle,
+      color: 'bg-red-500',
+      lightColor: 'bg-red-50',
+      textColor: 'text-red-600'
+    },
+    {
+      title: 'Today\'s Meetings',
+      value: stats.today || 0,
+      icon: TrendingUp,
+      color: 'bg-purple-500',
+      lightColor: 'bg-purple-50',
+      textColor: 'text-purple-600'
+    },
+    {
+      title: 'Upcoming',
+      value: stats.upcoming || 0,
+      icon: Users,
+      color: 'bg-indigo-500',
+      lightColor: 'bg-indigo-50',
+      textColor: 'text-indigo-600'
     }
   ];
 
-  const getColorClasses = (color) => {
-    const colorMap = {
-      blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
-      yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-      green: { bg: 'bg-green-100', text: 'text-green-600' },
-      red: { bg: 'bg-red-100', text: 'text-red-600' }
-    };
-    return colorMap[color] || { bg: 'bg-gray-100', text: 'text-gray-600' };
-  };
+  if (loading && !meetings.length) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-8 h-8 bg-gray-200 rounded"></div>
+              <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-      {stats.map((stat, index) => {
-        const colors = getColorClasses(stat.color);
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+      {statCards.map((stat, index) => {
+        const Icon = stat.icon;
         return (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className={`p-3 rounded-full ${colors.bg}`}>
-                <stat.icon className={`h-6 w-6 ${colors.text}`} />
+          <div key={index} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-2 ${stat.lightColor} rounded-lg`}>
+                <Icon size={20} className={stat.textColor} />
               </div>
-              <div className="ml-4">
-                <p className="text-sm text-gray-600 font-medium">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-900">{stat.count}</p>
+              <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
+                <Icon size={24} className="text-white" />
               </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+              <p className="text-2xl font-bold text-gray-900">{stat.value.toLocaleString()}</p>
             </div>
           </div>
         );

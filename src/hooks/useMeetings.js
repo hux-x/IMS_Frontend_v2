@@ -1,132 +1,269 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import meetingService from '@/apis/services/meetingService';
 
-// Custom hook for managing meetings data and operations
-export const useMeetings = () => {
+const useMeetings = () => {
   const [meetings, setMeetings] = useState([]);
+  const [filteredMeetings, setFilteredMeetings] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    limit: 50,
+    offset: 0,
+    totalCount: 0,
+    hasMore: false
+  });
 
-  // Initialize mock data
-  useEffect(() => {
-    // Mock employees data
-    const mockEmployees = [
-      { _id: '1', name: 'John Doe', email: 'john@company.com' },
-      { _id: '2', name: 'Jane Smith', email: 'jane@company.com' },
-      { _id: '3', name: 'Mike Johnson', email: 'mike@company.com' },
-      { _id: '4', name: 'Sarah Wilson', email: 'sarah@company.com' }
-    ];
-    setEmployees(mockEmployees);
+  const [filters, setFilters] = useState({
+    status: 'all',
+    date: '',
+    searchQuery: '',
+    employeeId: '',
+    startDate: '',
+    endDate: ''
+  });
 
-    // Mock meetings data
-    const mockMeetings = [
-      {
-        _id: '1',
-        title: 'Weekly Team Standup',
-        description: 'Weekly sync for development team',
-        startTime: '2025-08-29T09:00:00Z',
-        endTime: '2025-08-29T10:00:00Z',
-        status: 'planned',
-        employees: [mockEmployees[0], mockEmployees[1]],
-        createdBy: mockEmployees[0],
-        clients: [{ name: 'ABC Corp', email: 'contact@abc.com' }]
-      },
-      {
-        _id: '2',
-        title: 'Project Review',
-        description: 'Review Q3 project deliverables',
-        startTime: '2025-08-30T14:00:00Z',
-        endTime: '2025-08-30T15:30:00Z',
-        status: 'completed',
-        employees: [mockEmployees[0], mockEmployees[2], mockEmployees[3]],
-        createdBy: mockEmployees[0],
-        clients: []
-      },
-      {
-        _id: '3',
-        title: 'Client Presentation',
-        description: 'Present final designs to client',
-        startTime: '2025-08-28T16:00:00Z',
-        endTime: '2025-08-28T17:00:00Z',
-        status: 'cancelled',
-        employees: [mockEmployees[1], mockEmployees[3]],
-        createdBy: mockEmployees[1],
-        clients: [{ name: 'XYZ Inc', email: 'info@xyz.com' }]
+  const fetchMeetings = useCallback(async (customFilters = {}) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const finalFilters = { ...filters, ...customFilters };
+      const { status, date, searchQuery, employeeId, startDate, endDate } = finalFilters;
+
+      let response;
+
+      if (status === 'all' && !date && !searchQuery && !employeeId && !startDate && !endDate) {
+        response = await meetingService.getAllMeetings(pagination.limit, pagination.offset);
+      } else {
+        const filterParams = {
+          limit: pagination.limit,
+          offset: pagination.offset,
+          ...(status !== 'all' && { status }),
+          ...(date && { date }),
+          ...(searchQuery && { title: searchQuery }),
+          ...(employeeId && { employeeId }),
+          ...(startDate && { startDate }),
+          ...(endDate && { endDate })
+        };
+
+        response = await meetingService.getFilteredMeetings(filterParams);
       }
-    ];
-    setMeetings(mockMeetings);
+
+      if (response?.data) {
+        const meetingsData = response.data.meetings || response.data;
+        setMeetings(meetingsData);
+        setFilteredMeetings(meetingsData);
+
+        if (response.data.pagination) {
+          setPagination(response.data.pagination);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching meetings:', err);
+      setError(err.response?.data?.message || 'Failed to fetch meetings');
+    } finally {
+      setLoading(false);
+    }
+  }, [filters, pagination.limit, pagination.offset]);
+
+  const fetchEmployees = useCallback(async () => {
+    try {
+      const response = await meetingService.getEmployeesForMeeting();
+      if (response?.data) {
+        setEmployees(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching employees:', err);
+    }
   }, []);
 
-  const createMeeting = (formData) => {
-    const newMeeting = {
-      _id: Date.now().toString(),
-      ...formData,
-      startTime: new Date(formData.startTime).toISOString(),
-      endTime: new Date(formData.endTime).toISOString(),
-      employees: employees.filter(emp => formData.employees.includes(emp._id)),
-      createdBy: employees[0] // Mock current user
-    };
-    setMeetings(prev => [...prev, newMeeting]);
-    return newMeeting;
-  };
-
-  const updateMeeting = (meetingId, formData) => {
-    setMeetings(prev => prev.map(meeting =>
-      meeting._id === meetingId
-        ? {
-            ...meeting,
-            ...formData,
-            startTime: new Date(formData.startTime).toISOString(),
-            endTime: new Date(formData.endTime).toISOString(),
-            employees: employees.filter(emp => formData.employees.includes(emp._id))
-          }
-        : meeting
-    ));
-  };
-
-  const deleteMeeting = (meetingId) => {
-    setMeetings(prev => prev.filter(meeting => meeting._id !== meetingId));
-  };
-
-  return {
-    meetings,
-    employees,
-    createMeeting,
-    updateMeeting,
-    deleteMeeting
-  };
-};
-
-// Custom hook for filtering meetings
-export const useFilteredMeetings = (meetings, filters) => {
-  const [filteredMeetings, setFilteredMeetings] = useState([]);
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   useEffect(() => {
-    let filtered = meetings;
-    const { searchQuery, filterStatus, filterDate } = filters;
+    fetchMeetings();
+  }, [fetchMeetings]);
 
-    // Apply search filter
-    if (searchQuery && searchQuery.trim()) {
-      filtered = filtered.filter(meeting =>
-        meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        meeting.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        meeting.employees.some(emp => emp.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const createMeeting = async (meetingData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const validation = meetingService.validateMeetingTime(
+        meetingData.startTime,
+        meetingData.endTime
       );
+
+      if (!validation.isValid) {
+        throw new Error(validation.error);
+      }
+
+      const response = await meetingService.createMeeting(meetingData);
+      
+      if (response?.data) {
+        await fetchMeetings();
+        return { success: true, data: response.data };
+      }
+    } catch (err) {
+      console.error('Error creating meeting:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create meeting';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Apply status filter
-    if (filterStatus && filterStatus !== 'all') {
-      filtered = filtered.filter(meeting => meeting.status === filterStatus);
+  const updateMeeting = async (meetingId, updateData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (updateData.startTime && updateData.endTime) {
+        const validation = meetingService.validateMeetingTime(
+          updateData.startTime,
+          updateData.endTime
+        );
+
+        if (!validation.isValid) {
+          throw new Error(validation.error);
+        }
+      }
+
+      const response = await meetingService.updateMeeting(meetingId, updateData);
+      
+      if (response?.data) {
+        await fetchMeetings();
+        return { success: true, data: response.data };
+      }
+    } catch (err) {
+      console.error('Error updating meeting:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to update meeting';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Apply date filter
-    if (filterDate) {
-      filtered = filtered.filter(meeting => {
-        const meetingDate = new Date(meeting.startTime).toISOString().split('T')[0];
-        return meetingDate === filterDate;
-      });
+  const deleteMeeting = async (meetingId) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await meetingService.deleteMeeting(meetingId);
+      
+      if (response?.data) {
+        await fetchMeetings();
+        return { success: true };
+      }
+    } catch (err) {
+      console.error('Error deleting meeting:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to delete meeting';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
     }
+  };
 
-    setFilteredMeetings(filtered);
-  }, [meetings, filters]);
+  const getMeetingById = async (meetingId) => {
+    try {
+      setLoading(true);
+      const response = await meetingService.getMeetingById(meetingId);
+      return response?.data || null;
+    } catch (err) {
+      console.error('Error fetching meeting:', err);
+      setError(err.response?.data?.message || 'Failed to fetch meeting');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return filteredMeetings;
+  const applyFilters = useCallback((newFilters) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+    setPagination(prev => ({ ...prev, offset: 0 }));
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters({
+      status: 'all',
+      date: '',
+      searchQuery: '',
+      employeeId: '',
+      startDate: '',
+      endDate: ''
+    });
+    setPagination(prev => ({ ...prev, offset: 0 }));
+  }, []);
+
+  const loadMore = useCallback(() => {
+    if (pagination.hasMore && !loading) {
+      setPagination(prev => ({
+        ...prev,
+        offset: prev.offset + prev.limit
+      }));
+    }
+  }, [pagination.hasMore, loading]);
+
+  const refreshMeetings = useCallback(() => {
+    setPagination(prev => ({ ...prev, offset: 0 }));
+    fetchMeetings();
+  }, [fetchMeetings]);
+
+  const getMeetingStats = useCallback(() => {
+    const stats = {
+      total: meetings.length,
+      planned: meetings.filter(m => m.status === 'planned').length,
+      completed: meetings.filter(m => m.status === 'completed').length,
+      cancelled: meetings.filter(m => m.status === 'cancelled').length,
+      today: meetings.filter(m => {
+        const today = new Date().toDateString();
+        const meetingDate = new Date(m.startTime).toDateString();
+        return meetingDate === today;
+      }).length,
+      upcoming: meetings.filter(m => {
+        const now = new Date();
+        const meetingStart = new Date(m.startTime);
+        return meetingStart > now && m.status === 'planned';
+      }).length
+    };
+    return stats;
+  }, [meetings]);
+
+  return {
+    // State
+    meetings: filteredMeetings,
+    employees,
+    loading,
+    error,
+    filters,
+    pagination,
+
+    // Actions
+    createMeeting,
+    updateMeeting,
+    deleteMeeting,
+    getMeetingById,
+    
+    // Filter actions
+    applyFilters,
+    clearFilters,
+    
+    // Pagination
+    loadMore,
+    
+    // Utility
+    refreshMeetings,
+    getMeetingStats,
+    
+    // Helper methods
+    validateMeetingTime: meetingService.validateMeetingTime,
+    formatMeetingForCalendar: meetingService.formatMeetingForCalendar
+  };
 };
+
+export default useMeetings;
