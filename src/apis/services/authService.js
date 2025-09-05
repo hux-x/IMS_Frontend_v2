@@ -9,7 +9,7 @@ import {
     deleteEmployee,
     getAllEmployees,
 } from "@/apis/endpoints/auth";
-import { storeToken } from "@/apis/token/tokenStorage";
+import { storeToken } from "@/apis/localStorage/tokenStorage";
 import { storeuserId } from "@/apis/localStorage/idStorage";
 
 const authService = {
@@ -67,6 +67,9 @@ const authService = {
     deleteEmployee: async (id) => {
         return await deleteEmployee(id);
     },
+    getAllEmployees: async () => {
+        return await getAllEmployees();
+    }
     
 };
 export default authService;

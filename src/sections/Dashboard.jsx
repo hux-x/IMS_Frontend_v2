@@ -111,7 +111,7 @@ const Dashboard = () => {
         </h2>
         {myTasks.length > 0 ? (
           myTasks.map((task, index) => (
-            <TaskCard key={task._id} task={task} onDelete={handleDeleteTask} onUpdate={handleDeleteTask} />
+            <TaskCard key={task._id} task={task} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
           ))
         ) : (
           <p className="text-gray-500">No incomplete tasks found.</p>

@@ -33,6 +33,7 @@ const MeetingDashboard = () => {
   const handleCreateMeeting = async (formData) => {
     setActionLoading(true);
     try {
+      console.log('Creating meeting with data:', formData);
       const result = await createMeeting(formData);
       if (result.success) {
         setShowCreateModal(false);
@@ -40,9 +41,11 @@ const MeetingDashboard = () => {
         alert('Meeting created successfully!');
       } else {
         // Error notification would go here
+        console.error('Create meeting error:', result.error);
         alert(`Error: ${result.error}`);
       }
     } catch (err) {
+      console.error('Create meeting exception:', err);
       alert('Failed to create meeting');
     } finally {
       setActionLoading(false);
@@ -54,15 +57,18 @@ const MeetingDashboard = () => {
     
     setActionLoading(true);
     try {
-      const result = await updateMeeting(currentMeeting._id, formData);
+      console.log('Updating meeting with data:', formData);
+      const result = await updateMeeting(currentMeeting._id || currentMeeting.id, formData);
       if (result.success) {
         setShowEditModal(false);
         setCurrentMeeting(null);
         alert('Meeting updated successfully!');
       } else {
+        console.error('Update meeting error:', result.error);
         alert(`Error: ${result.error}`);
       }
     } catch (err) {
+      console.error('Update meeting exception:', err);
       alert('Failed to update meeting');
     } finally {
       setActionLoading(false);
@@ -80,9 +86,11 @@ const MeetingDashboard = () => {
       if (result.success) {
         alert('Meeting deleted successfully!');
       } else {
+        console.error('Delete meeting error:', result.error);
         alert(`Error: ${result.error}`);
       }
     } catch (err) {
+      console.error('Delete meeting exception:', err);
       alert('Failed to delete meeting');
     } finally {
       setActionLoading(false);
@@ -90,21 +98,40 @@ const MeetingDashboard = () => {
   };
 
   const handleViewMeeting = (meeting) => {
+    console.log('Viewing meeting:', meeting);
     setCurrentMeeting(meeting);
     setShowViewModal(true);
   };
 
   const handleEditMeeting = (meeting) => {
+    console.log('Editing meeting:', meeting);
     setCurrentMeeting(meeting);
     setShowEditModal(true);
   };
 
   const handleFilterChange = (filterType, value) => {
+    console.log('Filter change:', filterType, value);
     applyFilters({ [filterType]: value });
   };
 
   const handleClearFilters = () => {
+    console.log('Clearing filters');
     clearFilters();
+  };
+
+  const handleCreateModalClose = () => {
+    setShowCreateModal(false);
+    setCurrentMeeting(null);
+  };
+
+  const handleEditModalClose = () => {
+    setShowEditModal(false);
+    setCurrentMeeting(null);
+  };
+
+  const handleViewModalClose = () => {
+    setShowViewModal(false);
+    setCurrentMeeting(null);
   };
 
   const stats = getMeetingStats();
@@ -144,7 +171,7 @@ const MeetingDashboard = () => {
               <button
                 onClick={refreshMeetings}
                 disabled={loading}
-                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100"
+                className="text-gray-600 hover:text-gray-800 p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
                 title="Refresh meetings"
               >
                 <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
@@ -198,9 +225,17 @@ const MeetingDashboard = () => {
           <div className="flex justify-center mt-6">
             <button
               onClick={loadMore}
-              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+              disabled={actionLoading}
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 disabled:opacity-50 flex items-center gap-2"
             >
-              Load More Meetings
+              {actionLoading ? (
+                <>
+                  <RefreshCw size={16} className="animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load More Meetings'
+              )}
             </button>
           </div>
         )}
@@ -232,13 +267,15 @@ const MeetingDashboard = () => {
               <button
                 onClick={handleClearFilters}
                 className="text-blue-600 hover:text-blue-700 font-medium"
+                disabled={loading}
               >
                 Clear Filters
               </button>
             ) : (
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                disabled={loading || actionLoading}
               >
                 Create First Meeting
               </button>
@@ -255,12 +292,9 @@ const MeetingDashboard = () => {
           employees={employees}
           onCreateSubmit={handleCreateMeeting}
           onEditSubmit={handleUpdateMeeting}
-          onCloseCreate={() => setShowCreateModal(false)}
-          onCloseEdit={() => {
-            setShowEditModal(false);
-            setCurrentMeeting(null);
-          }}
-          onCloseView={() => setShowViewModal(false)}
+          onCloseCreate={handleCreateModalClose}
+          onCloseEdit={handleEditModalClose}
+          onCloseView={handleViewModalClose}
           loading={actionLoading}
         />
       </div>
