@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 
 // Utility to get badge styles based on status/priority
 export const getBadgeStyles = (type, value) => {
@@ -21,11 +21,29 @@ export const getBadgeStyles = (type, value) => {
 
 // Individual project card component
 const ProjectCard = memo(({ project, onEdit, onDelete, onView }) => {
-  const imageSrc = project.projectImages?.[0]
-    ? project.projectImages[0] instanceof File
-      ? URL.createObjectURL(project.projectImages[0])
-      : project.projectImages[0]
-    : null;
+  const [imageSrc, setImageSrc] = useState(null);
+
+  useEffect(() => {
+    let url = null;
+    if (project.projectImages?.[0]) {
+      if (project.projectImages[0] instanceof File) {
+        url = URL.createObjectURL(project.projectImages[0]);
+        setImageSrc(url);
+      } else {
+        // Prepend backend base URL to relative paths
+        const imagePath = project.projectImages[0].startsWith('/uploads')
+          ? `http://localhost:5000${project.projectImages[0]}`
+          : project.projectImages[0];
+        setImageSrc(imagePath);
+      }
+    }
+    // Cleanup URL.createObjectURL to prevent memory leaks
+    return () => {
+      if (url && url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [project.projectImages]);
 
   return (
     <div
@@ -36,11 +54,11 @@ const ProjectCard = memo(({ project, onEdit, onDelete, onView }) => {
       {project.projectImages?.length > 0 && (
         <div className="relative h-48 overflow-hidden">
           <img
-            src={imageSrc}
+            src={imageSrc || 'https://placehold.co/400x200?text=Image+Not+Found'}
             alt={project.projectTitle}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
-              e.target.src = 'https://via.placeholder.com/400x200?text=Image+Not+Found';
+              e.target.src = 'https://placehold.co/400x200?text=Image+Not+Found';
             }}
             loading="lazy"
           />

@@ -1,53 +1,40 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import useProject from '@/hooks/useProject';
 import ProjectList from '@/components/cards/ProjectList';
-import ProjectForm from '@/components/cards/PorjectForm'; // Fixed typo in import (PorjectForm -> ProjectForm)
+import ProjectForm from '@/components/cards/PorjectForm';
 import ProjectModal from '@/components/modals/ProjectModal';
 import PropTypes from 'prop-types';
 
-const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectChange }) => {
-  const [projects, setProjects] = useState(initialProjects);
+const ProjectProposed = React.memo(() => {
+  const { projects, loading, error, getAllProjects } = useProject();
   const [editingProject, setEditingProject] = useState(null);
   const [viewingProject, setViewingProject] = useState(null);
 
-  // Handle adding a new project
+  // Fetch all projects on mount
+  useEffect(() => {
+    getAllProjects();
+  }, [getAllProjects]);
+
+  // Handle adding a new project (placeholder for next API integration)
   const handleAddProject = useCallback((projectData) => {
-    const newProject = {
-      ...projectData,
-      _id: `project-${Date.now()}-${Math.random().toString(36).slice(2)}`, // Temporary ID for client-side
-      createdAt: new Date().toISOString(),
-    };
-    setProjects((prev) => [...prev, newProject]);
-    if (onProjectChange) {
-      onProjectChange([...projects, newProject]);
-    }
-  }, [onProjectChange, projects]);
+    // To be implemented with createProject API
+    console.log('Add project:', projectData);
+  }, []);
 
-  // Handle updating an existing project
+  // Handle updating an existing project (placeholder for next API integration)
   const handleUpdateProject = useCallback((updatedData) => {
-    setProjects((prev) =>
-      prev.map((project) =>
-        project._id === editingProject._id ? { ...project, ...updatedData } : project
-      )
-    );
-    if (onProjectChange) {
-      onProjectChange(
-        projects.map((project) =>
-          project._id === editingProject._id ? { ...project, ...updatedData } : project
-        )
-      );
-    }
+    // To be implemented with updateProject API
+    console.log('Update project:', updatedData);
     setEditingProject(null);
-  }, [editingProject, onProjectChange, projects]);
+  }, []);
 
-  // Handle deleting a project
+  // Handle deleting a project (placeholder for next API integration)
   const handleDeleteProject = useCallback((projectId) => {
+    // To be implemented with deleteProject API
     if (window.confirm('Are you sure you want to delete this project?')) {
-      setProjects((prev) => prev.filter((project) => project._id !== projectId));
-      if (onProjectChange) {
-        onProjectChange(projects.filter((project) => project._id !== projectId));
-      }
+      console.log('Delete project:', projectId);
     }
-  }, [onProjectChange, projects]);
+  }, []);
 
   // Handle editing a project
   const handleEditProject = useCallback((project) => {
@@ -66,6 +53,18 @@ const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectC
           Proposed Projects
         </h1>
 
+        {loading && (
+          <div className="text-center py-12 text-gray-600">
+            <p className="text-lg font-medium">Loading projects...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-12 text-red-600">
+            <p className="text-lg font-medium">Error: {error}</p>
+          </div>
+        )}
+
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6 border border-gray-100 transition-all hover:shadow-xl">
           {editingProject ? (
             <ProjectForm
@@ -78,12 +77,14 @@ const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectC
           )}
         </div>
 
-        <ProjectList
-          projects={projects}
-          onEdit={handleEditProject}
-          onDelete={handleDeleteProject}
-          onView={handleViewProject}
-        />
+        {!loading && !error && (
+          <ProjectList
+            projects={projects}
+            onEdit={handleEditProject}
+            onDelete={handleDeleteProject}
+            onView={handleViewProject}
+          />
+        )}
 
         {viewingProject && (
           <ProjectModal
@@ -97,29 +98,7 @@ const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectC
 });
 
 ProjectProposed.propTypes = {
-  projects: PropTypes.arrayOf(
-    PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      projectTitle: PropTypes.string.isRequired,
-      description: PropTypes.string,
-      status: PropTypes.string,
-      priority: PropTypes.string,
-      clientName: PropTypes.string,
-      clientEmail: PropTypes.string,
-      clientPhone: PropTypes.string,
-      startDate: PropTypes.string,
-      endDate: PropTypes.string,
-      projectImages: PropTypes.arrayOf(PropTypes.string),
-      attachments: PropTypes.arrayOf(PropTypes.any),
-      designChecklist: PropTypes.arrayOf(
-        PropTypes.shape({
-          task: PropTypes.string,
-          isCompleted: PropTypes.bool,
-        })
-      ),
-    })
-  ),
-  onProjectChange: PropTypes.func,
+  // Removed initialProjects and onProjectChange as they're not needed with API
 };
 
 export default ProjectProposed;
