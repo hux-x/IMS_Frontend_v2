@@ -5,49 +5,91 @@ import {
   updateProject,
   addChecklistTask,
   toggleChecklistTask,
-  deleteProject,
   deleteChecklistTask,
-  getFilteredProjects,
+  deleteProject,
+  deleteProjectFiles,
 } from "@/apis/endpoints/project";
 
 const projectService = {
   createProject: async (projectData) => {
-    return await createProject(projectData);
+    try {
+      return await createProject(projectData);
+    } catch (err) {
+      console.error("Service Error [createProject]:", err);
+      throw err;
+    }
   },
 
   getAllProjects: async () => {
-    return await getAllProjects();
+    try {
+      return await getAllProjects();
+    } catch (err) {
+      console.error("Service Error [getAllProjects]:", err);
+      throw err;
+    }
   },
 
   getProjectById: async (projectId) => {
-    return await getProjectById(projectId);
+    try {
+      return await getProjectById(projectId);
+    } catch (err) {
+      console.error("Service Error [getProjectById]:", err);
+      throw err;
+    }
   },
 
   updateProject: async (projectId, updateData) => {
-    return await updateProject(projectId, updateData);
+    try {
+      return await updateProject(projectId, updateData);
+    } catch (err) {
+      console.error("Service Error [updateProject]:", err);
+      throw err;
+    }
+  },
+
+  deleteProjectFiles: async (projectId, fileData) => {
+    try {
+      return await deleteProjectFiles(projectId, fileData);
+    } catch (err) {
+      console.error("Service Error [deleteProjectFiles]:", err);
+      throw err;
+    }
   },
 
   addChecklistTask: async (projectId, task) => {
-    return await addChecklistTask(projectId, task);
+    try {
+      return await addChecklistTask(projectId, task);
+    } catch (err) {
+      console.error("Service Error [addChecklistTask]:", err);
+      throw err;
+    }
   },
 
   toggleChecklistTask: async (projectId, taskId) => {
-    return await toggleChecklistTask(projectId, taskId);
+    try {
+      return await toggleChecklistTask(projectId, taskId);
+    } catch (err) {
+      console.error("Service Error [toggleChecklistTask]:", err);
+      throw err;
+    }
   },
 
   deleteChecklistTask: async (projectId, taskId) => {
-    return await deleteChecklistTask(projectId, taskId);
-  },
-
-  getFilteredProjects: async (filters = {}) => {
-    const validFilters = Object.fromEntries(
-      Object.entries(filters).filter(([_, v]) => v !== null && v !== undefined && v !== "")
-    );
-    return await getFilteredProjects(validFilters);
+    try {
+      return await deleteChecklistTask(projectId, taskId);
+    } catch (err) {
+      console.error("Service Error [deleteChecklistTask]:", err);
+      throw err;
+    }
   },
 
   deleteProject: async (projectId) => {
-    return await deleteProject(projectId);
+    try {
+      return await deleteProject(projectId);
+    } catch (err) {
+      console.error("Service Error [deleteProject]:", err);
+      throw err;
+    }
   },
 };
 

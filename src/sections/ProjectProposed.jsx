@@ -1,53 +1,69 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import useProject from '@/hooks/useProject';
 import ProjectList from '@/components/cards/ProjectList';
-import ProjectForm from '@/components/cards/PorjectForm'; // Fixed typo in import (PorjectForm -> ProjectForm)
+import ProjectForm from '@/components/cards/PorjectForm';
 import ProjectModal from '@/components/modals/ProjectModal';
 import PropTypes from 'prop-types';
 
-const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectChange }) => {
-  const [projects, setProjects] = useState(initialProjects);
+const ProjectProposed = React.memo(() => {
+  const { projects, loading, error, getAllProjects, createProject, clearError } = useProject();
   const [editingProject, setEditingProject] = useState(null);
   const [viewingProject, setViewingProject] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch all projects on mount
+  useEffect(() => {
+    getAllProjects();
+  }, [getAllProjects]);
 
   // Handle adding a new project
-  const handleAddProject = useCallback((projectData) => {
-    const newProject = {
-      ...projectData,
-      _id: `project-${Date.now()}-${Math.random().toString(36).slice(2)}`, // Temporary ID for client-side
-      createdAt: new Date().toISOString(),
-    };
-    setProjects((prev) => [...prev, newProject]);
-    if (onProjectChange) {
-      onProjectChange([...projects, newProject]);
-    }
-  }, [onProjectChange, projects]);
+  const handleAddProject = useCallback(
+    async (projectData) => {
+      // Validate required fields
+      if (!projectData.projectTitle || !projectData.clientName || !projectData.clientEmail) {
+        toast.error('Please fill in all required fields: Project Title, Client Name, Client Email', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        return;
+      }
 
-  // Handle updating an existing project
+      try {
+        setIsSubmitting(true);
+        const newProject = await createProject(projectData);
+        toast.success('Project created successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        setEditingProject(null);
+        return newProject;
+      } catch (err) {
+        toast.error(err.message || 'Failed to create project', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        throw err;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [createProject]
+  );
+
+  // Handle updating an existing project (placeholder)
   const handleUpdateProject = useCallback((updatedData) => {
-    setProjects((prev) =>
-      prev.map((project) =>
-        project._id === editingProject._id ? { ...project, ...updatedData } : project
-      )
-    );
-    if (onProjectChange) {
-      onProjectChange(
-        projects.map((project) =>
-          project._id === editingProject._id ? { ...project, ...updatedData } : project
-        )
-      );
-    }
+    console.log('Update project:', updatedData);
     setEditingProject(null);
-  }, [editingProject, onProjectChange, projects]);
+  }, []);
 
-  // Handle deleting a project
+  // Handle deleting a project (placeholder)
   const handleDeleteProject = useCallback((projectId) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
-      setProjects((prev) => prev.filter((project) => project._id !== projectId));
-      if (onProjectChange) {
-        onProjectChange(projects.filter((project) => project._id !== projectId));
-      }
+      console.log('Delete project:', projectId);
     }
-  }, [onProjectChange, projects]);
+  }, []);
 
   // Handle editing a project
   const handleEditProject = useCallback((project) => {
@@ -66,24 +82,49 @@ const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectC
           Proposed Projects
         </h1>
 
+        {loading && (
+          <div className="text-center py-4 text-gray-600">
+            <p className="text-lg font-medium">Loading projects...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="text-center py-4 text-red-600">
+            <p className="text-lg font-medium">Error: {error}</p>
+            <button
+              onClick={clearError}
+              className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6 border border-gray-100 transition-all hover:shadow-xl">
           {editingProject ? (
             <ProjectForm
               initialData={editingProject}
               onSubmit={handleUpdateProject}
               onCancel={() => setEditingProject(null)}
+              isSubmitting={isSubmitting}
             />
           ) : (
-            <ProjectForm onSubmit={handleAddProject} />
+            <ProjectForm
+              onSubmit={handleAddProject}
+              onCancel={() => setEditingProject(null)}
+              isSubmitting={isSubmitting}
+            />
           )}
         </div>
 
-        <ProjectList
-          projects={projects}
-          onEdit={handleEditProject}
-          onDelete={handleDeleteProject}
-          onView={handleViewProject}
-        />
+        {!loading && !error && (
+          <ProjectList
+            projects={projects}
+            onEdit={handleEditProject}
+            onDelete={handleDeleteProject}
+            onView={handleViewProject}
+          />
+        )}
 
         {viewingProject && (
           <ProjectModal
@@ -96,30 +137,6 @@ const ProjectProposed = React.memo(({ projects: initialProjects = [], onProjectC
   );
 });
 
-ProjectProposed.propTypes = {
-  projects: PropTypes.arrayOf(
-    PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      projectTitle: PropTypes.string.isRequired,
-      description: PropTypes.string,
-      status: PropTypes.string,
-      priority: PropTypes.string,
-      clientName: PropTypes.string,
-      clientEmail: PropTypes.string,
-      clientPhone: PropTypes.string,
-      startDate: PropTypes.string,
-      endDate: PropTypes.string,
-      projectImages: PropTypes.arrayOf(PropTypes.string),
-      attachments: PropTypes.arrayOf(PropTypes.any),
-      designChecklist: PropTypes.arrayOf(
-        PropTypes.shape({
-          task: PropTypes.string,
-          isCompleted: PropTypes.bool,
-        })
-      ),
-    })
-  ),
-  onProjectChange: PropTypes.func,
-};
+ProjectProposed.propTypes = {};
 
 export default ProjectProposed;

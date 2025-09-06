@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect, useState } from 'react';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import { getBadgeStyles } from '@/components/cards/ProjectList';
@@ -29,6 +29,28 @@ const formatFileSize = (size) => {
 };
 
 const ProjectModalContent = memo(({ project, onClose }) => {
+  const [imageUrls, setImageUrls] = useState([]);
+
+  // Handle image URLs and cleanup for File objects
+  useEffect(() => {
+    const urls = project.projectImages?.map((img) => {
+      if (img instanceof File) {
+        return URL.createObjectURL(img);
+      }
+      return img.startsWith('/uploads') ? `http://localhost:5000${img}` : img;
+    }) || [];
+    setImageUrls(urls);
+
+    // Cleanup blob URLs
+    return () => {
+      urls.forEach((url) => {
+        if (url?.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [project.projectImages]);
+
   const handleFileOpen = (file) => {
     const fileName = file.name || file.originalName || file.filename || 'file';
     const extension = fileName.split('.').pop().toLowerCase();
@@ -37,7 +59,7 @@ const ProjectModalContent = memo(({ project, onClose }) => {
       fileUrl = URL.createObjectURL(file);
     } else {
       const filePath = file.path || file;
-      fileUrl = `http://localhost:5000${filePath}`;
+      fileUrl = filePath.startsWith('/uploads') ? `http://localhost:5000${filePath}` : filePath;
     }
 
     switch (extension) {
@@ -226,28 +248,28 @@ const ProjectModalContent = memo(({ project, onClose }) => {
           {/* Right Column - Media & Files */}
           <div className="space-y-6">
             {/* Image Gallery with enhanced interactivity */}
-            {project.projectImages?.length > 0 && (
+            {imageUrls?.length > 0 && (
               <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
                 <h2 className="text-lg font-serif font-bold text-gray-900 flex items-center">
                   <span className="w-1 h-6 bg-amber-400 rounded mr-3"></span>
-                  Project Gallery ({project.projectImages.length})
+                  Project Gallery ({imageUrls.length})
                 </h2>
                 <Carousel
-                  showThumbs={project.projectImages.length > 1}
+                  showThumbs={imageUrls.length > 1}
                   showStatus={false}
-                  showIndicators={project.projectImages.length > 1}
+                  showIndicators={imageUrls.length > 1}
                   infiniteLoop
                   emulateTouch
                   className="mt-3 rounded-lg overflow-hidden"
                 >
-                  {project.projectImages.map((img, index) => (
+                  {imageUrls.map((img, index) => (
                     <div key={index} className="h-64 bg-gray-100 flex items-center justify-center group">
                       <img
-                        src={img instanceof File ? URL.createObjectURL(img) : img}
+                        src={img}
                         alt={`Project image ${index + 1}`}
                         className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105 cursor-zoom-in"
                         onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/400x200?text=Image+Not+Found';
+                          e.target.src = 'https://placehold.co/400x200?text=Image+Not+Found';
                         }}
                         loading="lazy"
                       />
