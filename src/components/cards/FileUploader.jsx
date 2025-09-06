@@ -69,7 +69,10 @@ export default function FileUploader({ files = [], onChange }) {
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file, i) => {
-            const { icon, color } = getFileIcon(file.name);
+            const isExisting = typeof file === 'string';
+            const fileName = isExisting ? file.split('/').pop() : file.name;
+            const sizeText = isExisting ? 'Existing attachment' : `${(file.size / 1024).toFixed(1)} KB`;
+            const { icon, color } = getFileIcon(fileName);
             return (
               <div
                 key={i}
@@ -78,8 +81,8 @@ export default function FileUploader({ files = [], onChange }) {
                 <div className="flex items-center gap-3">
                   <span className={`text-lg ${color}`}>{icon}</span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{file.name}</p>
-                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-xs">{fileName}</p>
+                    <p className="text-xs text-gray-500">{sizeText}</p>
                   </div>
                 </div>
                 <button

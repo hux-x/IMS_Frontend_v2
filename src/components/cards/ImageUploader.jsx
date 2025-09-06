@@ -1,8 +1,25 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Carousel } from 'react-responsive-carousel';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 
 export default function ImageUploader({ images = [], onChange }) {
+  const [previewUrls, setPreviewUrls] = useState([]);
+
+  useEffect(() => {
+    const newUrls = images.map((img) =>
+      img instanceof File ? URL.createObjectURL(img) : img
+    );
+    setPreviewUrls(newUrls);
+
+    return () => {
+      newUrls.forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
+    };
+  }, [images]);
+
   const handleAddImages = useCallback((e) => {
     const files = Array.from(e.target.files).filter((file) =>
       ['image/jpeg', 'image/png', 'image/gif'].includes(file.type)
@@ -72,7 +89,7 @@ export default function ImageUploader({ images = [], onChange }) {
             {images.map((img, i) => (
               <div key={i} className="relative h-64">
                 <img
-                  src={URL.createObjectURL(img)}
+                  src={previewUrls[i]}
                   alt={`Upload preview ${i + 1}`}
                   className="h-full w-full object-contain"
                   loading="lazy"

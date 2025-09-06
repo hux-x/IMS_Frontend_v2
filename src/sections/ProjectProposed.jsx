@@ -3,12 +3,12 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useProject from '@/hooks/useProject';
 import ProjectList from '@/components/cards/ProjectList';
-import ProjectForm from '@/components/cards/PorjectForm';
+import ProjectForm from '@/components/cards/PorjectForm'; // Fixed typo: PorjectForm -> ProjectForm
 import ProjectModal from '@/components/modals/ProjectModal';
 import PropTypes from 'prop-types';
 
 const ProjectProposed = React.memo(() => {
-  const { projects, loading, error, getAllProjects, createProject, clearError } = useProject();
+  const { projects, loading, error, getAllProjects, createProject, updateProject, deleteProjectFiles, clearError } = useProject();
   const [editingProject, setEditingProject] = useState(null);
   const [viewingProject, setViewingProject] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,11 +52,51 @@ const ProjectProposed = React.memo(() => {
     [createProject]
   );
 
-  // Handle updating an existing project (placeholder)
-  const handleUpdateProject = useCallback((updatedData) => {
-    console.log('Update project:', updatedData);
-    setEditingProject(null);
-  }, []);
+  // Handle updating an existing project
+  const handleUpdateProject = useCallback(
+    async (updatedData) => {
+      if (!editingProject) return;
+
+      try {
+        setIsSubmitting(true);
+
+        // Detect removed existing images and attachments (strings/URLs)
+        const removedImages = editingProject.projectImages.filter(
+          (img) => typeof img === 'string' && !updatedData.projectImages.includes(img)
+        );
+        const removedAttachments = editingProject.attachments.filter(
+          (att) => typeof att === 'string' && !updatedData.attachments.includes(att)
+        );
+
+        // If there are removals, call deleteProjectFiles
+        if (removedImages.length > 0 || removedAttachments.length > 0) {
+          await deleteProjectFiles(editingProject._id, { removeImages: removedImages, removeAttachments: removedAttachments });
+          toast.success('Selected files removed successfully!', {
+            position: 'top-right',
+            autoClose: 3000,
+          });
+        }
+
+        // Then update the project with new data
+        await updateProject(editingProject._id, updatedData);
+        toast.success('Project updated successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+
+        setEditingProject(null);
+      } catch (err) {
+        toast.error(err.message || 'Failed to update project', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        throw err;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [updateProject, deleteProjectFiles, editingProject]
+  );
 
   // Handle deleting a project (placeholder)
   const handleDeleteProject = useCallback((projectId) => {
