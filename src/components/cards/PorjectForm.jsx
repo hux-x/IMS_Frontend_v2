@@ -12,10 +12,10 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
     description: initialData.description || '',
     status: initialData.status || 'Proposed',
     priority: initialData.priority || 'Medium',
-    startDate: initialData.startDate || '',
-    endDate: initialData.endDate || '',
-    projectImages: initialData.projectImages || [],
-    attachments: initialData.attachments || [],
+    startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : '',
+    endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : '',
+    projectImages: initialData.projectImages || [], // Keep URLs and Files
+    attachments: initialData.attachments || [], // Keep URLs and Files
     designChecklist: initialData.designChecklist || [],
   });
 
@@ -27,7 +27,13 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      onSubmit(formData);
+      // Ensure existing URLs are included, and new files are appended
+      const submitData = {
+        ...formData,
+        projectImages: formData.projectImages, // Includes both URLs and Files
+        attachments: formData.attachments, // Includes both URLs and Files
+      };
+      onSubmit(submitData);
     },
     [formData, onSubmit]
   );
@@ -102,7 +108,7 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
             className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
           >
             <option value="Proposed">Proposed</option>
-            <option value="mature">Mature</option>
+            <option value="Mature">Mature</option>
             <option value="In-Progress">In Progress</option>
             <option value="Completed">Completed</option>
             <option value="Cancelled">Cancelled</option>
@@ -186,10 +192,8 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
           disabled={isSubmitting}
         >
           {isSubmitting
-            ? 'Creating...'
-            : initialData.projectTitle
-            ? 'Update Project'
-            : 'Create Project'}
+            ? initialData.projectTitle ? 'Updating...' : 'Creating...'
+            : initialData.projectTitle ? 'Update Project' : 'Create Project'}
         </button>
       </div>
     </form>
