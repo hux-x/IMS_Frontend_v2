@@ -3,7 +3,7 @@ import ImageUploader from './ImageUploader';
 import FileUploader from './FileUploader';
 import ChecklistManager from './ChecklistManager';
 
-export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
+export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSubmitting = false }) {
   const [formData, setFormData] = useState({
     projectTitle: initialData.projectTitle || '',
     clientName: initialData.clientName || '',
@@ -46,7 +46,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Project Title */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             Project Title <span className="text-red-500">*</span>
@@ -60,20 +59,17 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
             placeholder="Enter project title"
           />
         </div>
-
-        {/* Client Name */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Client Name</label>
           <input
             name="clientName"
             value={formData.clientName}
             onChange={handleChange}
+            required
             className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             placeholder="Enter client name"
           />
         </div>
-
-        {/* Client Email */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Client Email</label>
           <input
@@ -81,12 +77,11 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
             name="clientEmail"
             value={formData.clientEmail}
             onChange={handleChange}
+            required
             className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             placeholder="Enter client email"
           />
         </div>
-
-        {/* Client Phone */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Client Phone</label>
           <input
@@ -98,8 +93,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
             placeholder="Enter client phone"
           />
         </div>
-
-        {/* Status */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Status</label>
           <select
@@ -115,8 +108,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
-
-        {/* Priority */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Priority</label>
           <select
@@ -130,8 +121,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
             <option value="Low">Low</option>
           </select>
         </div>
-
-        {/* Start Date */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">Start Date</label>
           <input
@@ -142,8 +131,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
             className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
           />
         </div>
-
-        {/* End Date */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">End Date</label>
           <input
@@ -155,8 +142,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
           />
         </div>
       </div>
-
-      {/* Description */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">Description</label>
         <textarea
@@ -168,8 +153,6 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
           placeholder="Enter project description"
         />
       </div>
-
-      {/* Upload Components */}
       <div className="space-y-6">
         <ImageUploader
           images={formData.projectImages}
@@ -184,23 +167,29 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {} }) {
           onChange={(designChecklist) => updateField('designChecklist', designChecklist)}
         />
       </div>
-
-      {/* Actions */}
       <div className="flex justify-end gap-4">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            disabled={isSubmitting}
           >
             Cancel
           </button>
         )}
         <button
           type="submit"
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all"
+          className={`px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all ${
+            isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+          disabled={isSubmitting}
         >
-          {initialData.projectTitle ? 'Update Project' : 'Create Project'}
+          {isSubmitting
+            ? 'Creating...'
+            : initialData.projectTitle
+            ? 'Update Project'
+            : 'Create Project'}
         </button>
       </div>
     </form>

@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import useProject from '@/hooks/useProject';
 import ProjectList from '@/components/cards/ProjectList';
 import ProjectForm from '@/components/cards/PorjectForm';
@@ -6,31 +8,58 @@ import ProjectModal from '@/components/modals/ProjectModal';
 import PropTypes from 'prop-types';
 
 const ProjectProposed = React.memo(() => {
-  const { projects, loading, error, getAllProjects } = useProject();
+  const { projects, loading, error, getAllProjects, createProject, clearError } = useProject();
   const [editingProject, setEditingProject] = useState(null);
   const [viewingProject, setViewingProject] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch all projects on mount
   useEffect(() => {
     getAllProjects();
   }, [getAllProjects]);
 
-  // Handle adding a new project (placeholder for next API integration)
-  const handleAddProject = useCallback((projectData) => {
-    // To be implemented with createProject API
-    console.log('Add project:', projectData);
-  }, []);
+  // Handle adding a new project
+  const handleAddProject = useCallback(
+    async (projectData) => {
+      // Validate required fields
+      if (!projectData.projectTitle || !projectData.clientName || !projectData.clientEmail) {
+        toast.error('Please fill in all required fields: Project Title, Client Name, Client Email', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        return;
+      }
 
-  // Handle updating an existing project (placeholder for next API integration)
+      try {
+        setIsSubmitting(true);
+        const newProject = await createProject(projectData);
+        toast.success('Project created successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        setEditingProject(null);
+        return newProject;
+      } catch (err) {
+        toast.error(err.message || 'Failed to create project', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        throw err;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [createProject]
+  );
+
+  // Handle updating an existing project (placeholder)
   const handleUpdateProject = useCallback((updatedData) => {
-    // To be implemented with updateProject API
     console.log('Update project:', updatedData);
     setEditingProject(null);
   }, []);
 
-  // Handle deleting a project (placeholder for next API integration)
+  // Handle deleting a project (placeholder)
   const handleDeleteProject = useCallback((projectId) => {
-    // To be implemented with deleteProject API
     if (window.confirm('Are you sure you want to delete this project?')) {
       console.log('Delete project:', projectId);
     }
@@ -54,14 +83,20 @@ const ProjectProposed = React.memo(() => {
         </h1>
 
         {loading && (
-          <div className="text-center py-12 text-gray-600">
+          <div className="text-center py-4 text-gray-600">
             <p className="text-lg font-medium">Loading projects...</p>
           </div>
         )}
 
         {error && (
-          <div className="text-center py-12 text-red-600">
+          <div className="text-center py-4 text-red-600">
             <p className="text-lg font-medium">Error: {error}</p>
+            <button
+              onClick={clearError}
+              className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+            >
+              Dismiss
+            </button>
           </div>
         )}
 
@@ -71,9 +106,14 @@ const ProjectProposed = React.memo(() => {
               initialData={editingProject}
               onSubmit={handleUpdateProject}
               onCancel={() => setEditingProject(null)}
+              isSubmitting={isSubmitting}
             />
           ) : (
-            <ProjectForm onSubmit={handleAddProject} />
+            <ProjectForm
+              onSubmit={handleAddProject}
+              onCancel={() => setEditingProject(null)}
+              isSubmitting={isSubmitting}
+            />
           )}
         </div>
 
@@ -97,8 +137,6 @@ const ProjectProposed = React.memo(() => {
   );
 });
 
-ProjectProposed.propTypes = {
-  // Removed initialProjects and onProjectChange as they're not needed with API
-};
+ProjectProposed.propTypes = {};
 
 export default ProjectProposed;
