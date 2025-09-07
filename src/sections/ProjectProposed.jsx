@@ -3,25 +3,35 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useProject from '@/hooks/useProject';
 import ProjectList from '@/components/cards/ProjectList';
-import ProjectForm from '@/components/cards/PorjectForm'; // Fixed typo: PorjectForm -> ProjectForm
+import ProjectForm from '@/components/cards/PorjectForm';
 import ProjectModal from '@/components/modals/ProjectModal';
-import PropTypes from 'prop-types';
 
-const ProjectProposed = React.memo(() => {
-  const { projects, loading, error, getAllProjects, createProject, updateProject, deleteProjectFiles, clearError } = useProject();
-  const [editingProject, setEditingProject] = useState(null);
-  const [viewingProject, setViewingProject] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function ProjectProposed() {
+  const {
+    projects,
+    selectedProject,
+    loading,
+    error,
+    getAllProjects,
+    getProjectById,
+    createProject,
+    updateProject,
+    deleteProjectFiles,
+    addChecklistTask,
+    toggleChecklistTask,
+    deleteChecklistTask,
+    deleteProject,
+    clearError,
+  } = useProject();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalEdit, setIsModalEdit] = useState(false);
 
-  // Fetch all projects on mount
   useEffect(() => {
     getAllProjects();
   }, [getAllProjects]);
 
-  // Handle adding a new project
   const handleAddProject = useCallback(
     async (projectData) => {
-      // Validate required fields
       if (!projectData.projectTitle || !projectData.clientName || !projectData.clientEmail) {
         toast.error('Please fill in all required fields: Project Title, Client Name, Client Email', {
           position: 'top-right',
@@ -29,90 +39,70 @@ const ProjectProposed = React.memo(() => {
         });
         return;
       }
-
       try {
-        setIsSubmitting(true);
         const newProject = await createProject(projectData);
         toast.success('Project created successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });
-        setEditingProject(null);
-        return newProject;
+        await getAllProjects();
+        await getProjectById(newProject._id);
+        setIsModalOpen(true);
+        setIsModalEdit(false);
       } catch (err) {
         toast.error(err.message || 'Failed to create project', {
           position: 'top-right',
           autoClose: 3000,
         });
-        throw err;
-      } finally {
-        setIsSubmitting(false);
       }
     },
-    [createProject]
+    [createProject, getAllProjects, getProjectById]
   );
 
-  // Handle updating an existing project
-  const handleUpdateProject = useCallback(
-    async (updatedData) => {
-      if (!editingProject) return;
-
-      try {
-        setIsSubmitting(true);
-
-        // Detect removed existing images and attachments (strings/URLs)
-        const removedImages = editingProject.projectImages.filter(
-          (img) => typeof img === 'string' && !updatedData.projectImages.includes(img)
-        );
-        const removedAttachments = editingProject.attachments.filter(
-          (att) => typeof att === 'string' && !updatedData.attachments.includes(att)
-        );
-
-        // If there are removals, call deleteProjectFiles
-        if (removedImages.length > 0 || removedAttachments.length > 0) {
-          await deleteProjectFiles(editingProject._id, { removeImages: removedImages, removeAttachments: removedAttachments });
-          toast.success('Selected files removed successfully!', {
-            position: 'top-right',
-            autoClose: 3000,
-          });
-        }
-
-        // Then update the project with new data
-        await updateProject(editingProject._id, updatedData);
-        toast.success('Project updated successfully!', {
-          position: 'top-right',
-          autoClose: 3000,
-        });
-
-        setEditingProject(null);
-      } catch (err) {
-        toast.error(err.message || 'Failed to update project', {
-          position: 'top-right',
-          autoClose: 3000,
-        });
-        throw err;
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [updateProject, deleteProjectFiles, editingProject]
-  );
-
-  // Handle deleting a project (placeholder)
-  const handleDeleteProject = useCallback((projectId) => {
-    if (window.confirm('Are you sure you want to delete this project?')) {
-      console.log('Delete project:', projectId);
+  const handleViewProject = useCallback(async (project) => {
+    try {
+      await getProjectById(project._id);
+      setIsModalOpen(true);
+      setIsModalEdit(false);
+    } catch (err) {
+      toast.error('Failed to fetch project details');
     }
+  }, [getProjectById]);
+
+  const handleEditProject = useCallback(async (project) => {
+    try {
+      await getProjectById(project._id);
+      setIsModalOpen(true);
+      setIsModalEdit(true);
+    } catch (err) {
+      toast.error('Failed to fetch project for editing');
+    }
+  }, [getProjectById]);
+
+  const handleDeleteProject = useCallback(async (projectId) => {
+    if (!window.confirm('Are you sure you want to delete this project?')) return;
+    try {
+      await deleteProject(projectId);
+      toast.success('Project deleted successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+      await getAllProjects();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete project', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
+    }
+  }, [deleteProject, getAllProjects]);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setIsModalEdit(false);
   }, []);
 
-  // Handle editing a project
-  const handleEditProject = useCallback((project) => {
-    setEditingProject(project);
-  }, []);
-
-  // Handle viewing a project
-  const handleViewProject = useCallback((project) => {
-    setViewingProject(project);
+  const handleSwitchToEdit = useCallback((edit) => {
+    setIsModalEdit(edit);
   }, []);
 
   return (
@@ -141,20 +131,7 @@ const ProjectProposed = React.memo(() => {
         )}
 
         <div className="mb-8 bg-white rounded-2xl shadow-lg p-6 border border-gray-100 transition-all hover:shadow-xl">
-          {editingProject ? (
-            <ProjectForm
-              initialData={editingProject}
-              onSubmit={handleUpdateProject}
-              onCancel={() => setEditingProject(null)}
-              isSubmitting={isSubmitting}
-            />
-          ) : (
-            <ProjectForm
-              onSubmit={handleAddProject}
-              onCancel={() => setEditingProject(null)}
-              isSubmitting={isSubmitting}
-            />
-          )}
+          <ProjectForm onSubmit={handleAddProject} />
         </div>
 
         {!loading && !error && (
@@ -166,17 +143,21 @@ const ProjectProposed = React.memo(() => {
           />
         )}
 
-        {viewingProject && (
+        {isModalOpen && selectedProject && (
           <ProjectModal
-            project={viewingProject}
-            onClose={() => setViewingProject(null)}
+            project={selectedProject}
+            isEdit={isModalEdit}
+            onClose={handleCloseModal}
+            onSwitchToEdit={handleSwitchToEdit}
+            onDelete={handleDeleteProject}
+            addChecklistTask={addChecklistTask}
+            toggleChecklistTask={toggleChecklistTask}
+            deleteChecklistTask={deleteChecklistTask}
+            deleteProjectFiles={deleteProjectFiles}
+            updateProject={updateProject}
           />
         )}
       </div>
     </div>
   );
-});
-
-ProjectProposed.propTypes = {};
-
-export default ProjectProposed;
+}

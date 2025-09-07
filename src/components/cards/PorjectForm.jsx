@@ -1,7 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import ImageUploader from './ImageUploader';
-import FileUploader from './FileUploader';
-import ChecklistManager from './ChecklistManager';
+import React, { useCallback, useState } from 'react';
+import ImageUploader from '@/components/cards/ImageUploader';
+import FileUploader from '@/components/cards/FileUploader';
+import ChecklistManager from '@/components/managers/checklistManagers';
 
 export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSubmitting = false }) {
   const [formData, setFormData] = useState({
@@ -14,8 +14,8 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
     priority: initialData.priority || 'Medium',
     startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : '',
     endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : '',
-    projectImages: initialData.projectImages || [], // Keep URLs and Files
-    attachments: initialData.attachments || [], // Keep URLs and Files
+    projectImages: initialData.projectImages || [],
+    attachments: initialData.attachments || [],
     designChecklist: initialData.designChecklist || [],
   });
 
@@ -27,13 +27,7 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      // Ensure existing URLs are included, and new files are appended
-      const submitData = {
-        ...formData,
-        projectImages: formData.projectImages, // Includes both URLs and Files
-        attachments: formData.attachments, // Includes both URLs and Files
-      };
-      onSubmit(submitData);
+      onSubmit(formData);
     },
     [formData, onSubmit]
   );
@@ -47,10 +41,7 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
       onSubmit={handleSubmit}
       className="space-y-6 bg-white p-6 rounded-2xl shadow-lg border border-gray-100"
     >
-      <h2 className="text-2xl font-semibold text-gray-900">
-        {initialData.projectTitle ? 'Edit Project' : 'New Project'}
-      </h2>
-
+      <h2 className="text-2xl font-semibold text-gray-900">New Project</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
@@ -191,9 +182,7 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
           }`}
           disabled={isSubmitting}
         >
-          {isSubmitting
-            ? initialData.projectTitle ? 'Updating...' : 'Creating...'
-            : initialData.projectTitle ? 'Update Project' : 'Create Project'}
+          {isSubmitting ? 'Creating...' : 'Create Project'}
         </button>
       </div>
     </form>
