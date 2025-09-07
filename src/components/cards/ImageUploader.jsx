@@ -6,9 +6,11 @@ export default function ImageUploader({ images = [], onChange }) {
   const [previewUrls, setPreviewUrls] = useState([]);
 
   useEffect(() => {
-    const newUrls = images.map((img) =>
-      img instanceof File ? URL.createObjectURL(img) : img
-    );
+    const newUrls = images.map((img) => {
+      if (img instanceof File) return URL.createObjectURL(img);
+      // Prepend base URL for relative paths
+      return img.startsWith('/uploads') ? `http://localhost:5000${img}` : img;
+    });
     setPreviewUrls(newUrls);
 
     return () => {

@@ -7,7 +7,6 @@ const useProject = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // GET ALL PROJECTS
   const getAllProjects = useCallback(async () => {
     try {
       setLoading(true);
@@ -25,7 +24,6 @@ const useProject = () => {
     }
   }, []);
 
-  // GET PROJECT BY ID
   const getProjectById = useCallback(async (projectId) => {
     try {
       setLoading(true);
@@ -43,7 +41,6 @@ const useProject = () => {
     }
   }, []);
 
-  // CREATE PROJECT
   const createProject = useCallback(async (projectData) => {
     try {
       setLoading(true);
@@ -66,7 +63,6 @@ const useProject = () => {
     }
   }, []);
 
-  // UPDATE PROJECT
   const updateProject = useCallback(async (projectId, updateData) => {
     try {
       setLoading(true);
@@ -94,7 +90,6 @@ const useProject = () => {
     }
   }, [selectedProject]);
 
-  // DELETE PROJECT FILES
   const deleteProjectFiles = useCallback(async (projectId, fileData) => {
     try {
       setLoading(true);
@@ -117,7 +112,6 @@ const useProject = () => {
     }
   }, [selectedProject]);
 
-  // ADD CHECKLIST TASK
   const addChecklistTask = useCallback(async (projectId, task) => {
     try {
       setLoading(true);
@@ -140,7 +134,6 @@ const useProject = () => {
     }
   }, [selectedProject]);
 
-  // TOGGLE CHECKLIST TASK
   const toggleChecklistTask = useCallback(async (projectId, taskId) => {
     try {
       setLoading(true);
@@ -165,7 +158,6 @@ const useProject = () => {
     }
   }, [selectedProject]);
 
-  // DELETE CHECKLIST TASK
   const deleteChecklistTask = useCallback(async (projectId, taskId) => {
     try {
       setLoading(true);
@@ -186,7 +178,6 @@ const useProject = () => {
     }
   }, [selectedProject]);
 
-  // DELETE PROJECT
   const deleteProject = useCallback(async (projectId) => {
     try {
       setLoading(true);
@@ -205,7 +196,6 @@ const useProject = () => {
     }
   }, [selectedProject]);
 
-  // CLEAR ERROR
   const clearError = useCallback(() => setError(null), []);
 
   return {
