@@ -118,4 +118,6 @@ const TaskCard = ({ task,onUpdate,onDelete }) => {
   );
 };
 
-export default React.memo(TaskCard);
+export default React.memo(TaskCard, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.task) === JSON.stringify(nextProps.task);
+});

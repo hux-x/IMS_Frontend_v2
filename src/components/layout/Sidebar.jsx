@@ -25,7 +25,6 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Reports', icon: BarChart3, path: '/reports' },
     { name: 'Teams', icon: Users, path: '/teams' },
     { name: 'Employees', icon: UserCircle, path: '/employees' },
-    { name: 'Team Dashboard', icon: UserCircle, path: '/teamdashboard' },
     { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed' },
     { name: 'Meetings', icon: Group, path: '/meetings' },
   ];

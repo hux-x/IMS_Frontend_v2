@@ -4,6 +4,7 @@ import CreateEmployeeModal from '@/components/modals/createEmployee';
 import EmployeeTable from '@/components/layout/ReuableTable';
 
 import { FaPlus, FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import useAuth from '@/hooks/useAuth';
 
 export default function EmployeeList() {
   const [search, setSearch] = useState('');
@@ -12,6 +13,20 @@ export default function EmployeeList() {
   const itemsPerPage = 13;
   const [isAddEmployeeModalOpen,setIsAddEmployeeModalOpen] = useState(false);
   const [employeeData,setEmployeeData] = useState([]);
+  const {getEmployees} = useAuth()
+  useEffect(()=>{
+    const fetchEmployees = async () => {
+      try {
+        const response = await getEmployees(100, 0); // Fetch 100 employees starting from offset 0
+        if (response && response.data) {
+          setEmployeeData(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+      }
+    };
+    fetchEmployees(); 
+  },[])
 
   const handleAddEmployee = (newEmployee) => {
     setEmployeeData(prev => [...prev, newEmployee]);

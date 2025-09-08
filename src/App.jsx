@@ -36,7 +36,7 @@ function App() {
           <Route path="teamdashboard" element={<TeamDashboard />} />
           <Route path="projectproposed" element={<ProjectProposed />} />
           <Route path="bugs" element={<Bugs />} />
-          <Route path='meetings' element={<MeetingDashboard/>}/>
+          <Route path='meetings' index element={<MeetingDashboard/>}/>
 
           {/* Example dynamic nested route */}
           <Route path="teamdashboard/:teamId" element={<TeamDashboard />} />

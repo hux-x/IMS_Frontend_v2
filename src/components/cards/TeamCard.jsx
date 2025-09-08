@@ -31,7 +31,7 @@ const TeamCard = ({ team, onClick }) => {
 
                     {/* External link icon */}
                     <Link 
-                        to={`/teamdashboard/${team.id}`} 
+                        to={`/teamdashboard/${team._id || team.id}`} 
                         onClick={(e) => e.stopPropagation()} // prevent card click
                         className="text-gray-500 hover:text-gray-700"
                         title="View team details"

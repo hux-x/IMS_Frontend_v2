@@ -12,8 +12,9 @@ const useAuth = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.getEmployees(limit, offset);
+      const response = await authService.getAllEmployees();
       setEmployees(response.data);
+      console.log(response.data)
     } catch (err) {
       setError(err);
     } finally {
