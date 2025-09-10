@@ -1,18 +1,22 @@
-import { useState } from 'react';
+// src/components/layout/Navbar.jsx
+import { useState, useContext } from 'react';
 import { Bell, Menu, Search, User } from 'lucide-react';
 import Notifications from '@/components/ui/Notifications';
 import NavProfile from '@/components/ui/NavProfile';
+import { AuthContext } from '@/context/AuthContext';
 
 const Header = ({ onMenuClick = () => {} }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const { userId, userRole } = useContext(AuthContext); // Assuming userId or userRole can help fetch user data
+
+  // Dummy user data (replace with dynamic fetch if needed)
+  const user = {
+    name: userRole === 'admin' ? 'Admin User' : 'Employee User', // Placeholder, update with actual user data
+    email: 'user@example.com', // Placeholder, update with actual user data
+  };
 
   const totalUnread = 5;
-
-  const user = {
-    name: 'Hux',
-    email: 'hux@gmail.com',
-  };
 
   const dummyNotifications = [
     {

@@ -1,7 +1,10 @@
+// src/App.js
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { AuthProvider, AuthContext } from '@/context/AuthContext';
+import Login from '@/pages/Login';
 import Layout from '@/components/layout/Layout';
 import Dashboard from '@/sections/Dashboard';
 import Employees from '@/sections/Employees';
@@ -16,34 +19,75 @@ import ProjectProposed from '@/sections/ProjectProposed';
 import Bugs from '@/sections/Bugs';
 import MeetingDashboard from './sections/Meetings';
 
+const PrivateRoute = ({ children, allowedRoles }) => {
+  const { isAuthenticated, userRole, loading } = React.useContext(AuthContext);
+  
+  if (loading) return <div>Loading...</div>;
+  
+  if (!isAuthenticated) return <Navigate to="/login" />;
+  
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return children;
+};
+
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Routes>
-        <Route path="/" element={<Layout />}>
-          {/* Default landing page */}
-          <Route index element={<Dashboard />} />
+        {/* Public Route: Login page as the entry point */}
+        <Route path="/login" element={<Login />} />
 
-          {/* Nested routes */}
+        {/* Private Routes wrapped in Layout with role-based access */}
+        <Route path="/" element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }>
+          {/* Default redirect to login if not authenticated, otherwise to dashboard */}
+          <Route index element={<Navigate to="/login" />} />
+
+          {/* Common routes accessible to both roles */}
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="employees" element={<Employees />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="chat" element={<Chats />} />
           <Route path="attendance" element={<Attendance />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="teams" element={<Teams />} />
-          <Route path="admin" element={<AdminPanel />} />
+
+          {/* Admin-only routes */}
+          <Route path="employees" element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <Employees />
+            </PrivateRoute>
+          } />
+          <Route path="reports" element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <Reports />
+            </PrivateRoute>
+          } />
+          <Route path="teams" element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <Teams />
+            </PrivateRoute>
+          } />
+          <Route path="admin" element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <AdminPanel />
+            </PrivateRoute>
+          } />
           <Route path="teamdashboard" element={<TeamDashboard />} />
           <Route path="projectproposed" element={<ProjectProposed />} />
           <Route path="bugs" element={<Bugs />} />
-          <Route path='meetings' index element={<MeetingDashboard/>}/>
+          <Route path="meetings" element={<MeetingDashboard />} />
 
-          {/* Example dynamic nested route */}
           <Route path="teamdashboard/:teamId" element={<TeamDashboard />} />
         </Route>
+
+        {/* Catch-all redirect to login */}
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       
-      {/* ToastContainer should be placed at the root level of your app */}
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -56,7 +100,7 @@ function App() {
         pauseOnHover
         theme="light"
       />
-    </>
+    </AuthProvider>
   );
 }
 
