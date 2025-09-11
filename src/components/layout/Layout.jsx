@@ -1,3 +1,4 @@
+// src/components/layout/Layout.jsx
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Outlet } from 'react-router-dom';
@@ -12,7 +13,7 @@ const Layout = () => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 1024);
       if (window.innerWidth >= 1024) {
-        setSidebarOpen(true); 
+        setSidebarOpen(true);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -46,7 +47,6 @@ const Layout = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-          
             <Outlet />
           </motion.div>
         </main>

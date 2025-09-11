@@ -1,29 +1,34 @@
 import { useState, useEffect, useCallback } from "react";
+import { useContext } from "react";
+import { AuthContext } from "@/context/authContext"; // Correct import from context
 import authService from "@/apis/services/authService";
 
 const useAuth = () => {
+  const { isAuthenticated, userId } = useContext(AuthContext);
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Fetch all employees
-  const getEmployees = useCallback(async (limit, offset) => {
+  const getEmployees = useCallback(async (limit = 10, offset = 0) => {
+    if (!isAuthenticated || !userId) return;
     try {
       setLoading(true);
       setError(null);
       const response = await authService.getAllEmployees();
-      setEmployees(response.data);
-      console.log(response.data)
+      setEmployees(response.data.employees || []);
+      console.log(response.data);
     } catch (err) {
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, userId]);
 
   // Add employee
   const addEmployee = useCallback(async (employee) => {
+    if (!isAuthenticated || !userId) return;
     try {
       setLoading(true);
       setError(null);
@@ -41,10 +46,11 @@ const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, userId]);
 
   // Update employee
   const updateEmployee = useCallback(async (id, updates) => {
+    if (!isAuthenticated || !userId) return;
     try {
       setLoading(true);
       setError(null);
@@ -57,57 +63,60 @@ const useAuth = () => {
         updates.position
       );
       setEmployees((prev) =>
-        prev.map((e) => (e.id === id ? response.data : e))
+        prev.map((e) => (e._id === id ? response.data.employee : e))
       );
     } catch (err) {
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, userId]);
 
   // Delete employee
   const deleteEmployee = useCallback(async (id) => {
+    if (!isAuthenticated || !userId) return;
     try {
       setLoading(true);
       setError(null);
       await authService.deleteEmployee(id);
-      setEmployees((prev) => prev.filter((e) => e.id !== id));
+      setEmployees((prev) => prev.filter((e) => e._id !== id));
     } catch (err) {
       setError(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated, userId]);
 
   const getFilteredEmployees = useCallback(
-  async ({ limit, offset, role, position, status, available }) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await authService.getFilteredEmployees(
-        limit,
-        offset,
-        role,
-        position,
-        status,
-        available
-      );
-      setFilteredEmployees(res.data);
-    } catch (err) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  },
-  []
-);
+    async ({ limit = 10, offset = 0, role, position, status, available }) => {
+      if (!isAuthenticated || !userId) return;
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await authService.getFilteredEmployees(
+          limit,
+          offset,
+          role,
+          position,
+          status,
+          available
+        );
+        setFilteredEmployees(res.data.employees || []);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [isAuthenticated, userId]
+  );
 
-
-  // Load employees on mount
+  // Load employees after authentication
   useEffect(() => {
-    getEmployees();
-  }, [getEmployees]);
+    if (isAuthenticated && userId) {
+      getEmployees();
+    }
+  }, [isAuthenticated, userId, getEmployees]);
 
   return {
     employees,

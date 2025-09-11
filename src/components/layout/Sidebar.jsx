@@ -1,3 +1,4 @@
+// src/components/layout/Sidebar.jsx
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -9,25 +10,34 @@ import {
   Shield,
   UserCircle,
   LogOut,
-  Group
+  Group,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useContext } from 'react';
+import { AuthContext } from '@/context/AuthContext';
 
 const Sidebar = ({ isOpen }) => {
   const location = useLocation();
+  const { userRole, logout } = useContext(AuthContext);
 
+  // Define menu items with role-based access
   const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Tasks', icon: CheckSquare, path: '/tasks' },
-    { name: 'Chat', icon: MessageCircle, path: '/chat' },
-    { name: 'Attendance', icon: Calendar, path: '/attendance' },
-    { name: 'Admin Panel', icon: Shield, path: '/admin' },
-    { name: 'Reports', icon: BarChart3, path: '/reports' },
-    { name: 'Teams', icon: Users, path: '/teams' },
-    { name: 'Employees', icon: UserCircle, path: '/employees' },
-    { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed' },
-    { name: 'Meetings', icon: Group, path: '/meetings' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin', 'employee'] },
+    { name: 'Tasks', icon: CheckSquare, path: '/tasks', roles: ['admin', 'employee'] },
+    { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
+    { name: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin', 'employee'] },
+    { name: 'Admin Panel', icon: Shield, path: '/admin', roles: ['admin'] },
+    { name: 'Reports', icon: BarChart3, path: '/reports', roles: ['admin'] },
+    { name: 'Teams', icon: Users, path: '/teams', roles: ['admin'] },
+    { name: 'Employees', icon: UserCircle, path: '/employees', roles: ['admin'] },
+    { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed', roles: ['admin'] },
+    { name: 'Meetings', icon: Group, path: '/meetings', roles: ['admin'] },
   ];
+
+  // Filter menu items based on user role
+  const filteredMenuItems = menuItems.filter(item => 
+    !item.roles || item.roles.includes(userRole)
+  );
 
   return (
     <motion.div
@@ -41,7 +51,7 @@ const Sidebar = ({ isOpen }) => {
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-1">
-          {menuItems.map((item) => {
+          {filteredMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
               <Link
@@ -61,7 +71,13 @@ const Sidebar = ({ isOpen }) => {
         </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              logout();
+            }}
+            className="flex items-center w-full px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors"
+          >
             <LogOut className="w-5 h-5 mr-3" />
             Logout
           </button>
