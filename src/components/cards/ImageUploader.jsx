@@ -8,7 +8,6 @@ export default function ImageUploader({ images = [], onChange }) {
   useEffect(() => {
     const newUrls = images.map((img) => {
       if (img instanceof File) return URL.createObjectURL(img);
-      // Prepend base URL for relative paths
       return img.startsWith('/uploads') ? `http://localhost:5000${img}` : img;
     });
     setPreviewUrls(newUrls);
@@ -39,10 +38,10 @@ export default function ImageUploader({ images = [], onChange }) {
   return (
     <div className="space-y-4">
       <label className="block text-sm font-medium text-gray-700">Project Images</label>
-      <label className="flex items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all">
+      <label className="flex items-center justify-center w-full h-40 border-2 border-dashed border-gray-200 rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200 shadow-sm">
         <div className="text-center">
           <svg
-            className="w-10 h-10 text-gray-400 mx-auto"
+            className="w-10 h-10 text-black mx-auto"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -55,7 +54,7 @@ export default function ImageUploader({ images = [], onChange }) {
             />
           </svg>
           <p className="mt-2 text-sm text-gray-600">
-            <span className="font-semibold">Click to upload</span> or drag and drop
+            <span className="font-semibold text-black hover:text-gray-800">Click to upload</span> or drag and drop
           </p>
           <p className="text-xs text-gray-500">JPG, PNG, GIF</p>
         </div>
@@ -76,7 +75,7 @@ export default function ImageUploader({ images = [], onChange }) {
             </span>
             <button
               onClick={() => onChange([])}
-              className="text-sm text-red-600 hover:text-red-800 transition-colors"
+              className="text-sm text-red-500 hover:text-red-600 transition-colors duration-200"
             >
               Clear all
             </button>
@@ -86,14 +85,14 @@ export default function ImageUploader({ images = [], onChange }) {
             showStatus={false}
             infiniteLoop
             emulateTouch
-            className="rounded-lg border border-gray-200 bg-gray-50"
+            className="rounded-md border border-gray-200 bg-white shadow-sm overflow-hidden"
           >
             {images.map((img, i) => (
-              <div key={i} className="relative h-64">
+              <div key={i} className="relative h-60">
                 <img
                   src={previewUrls[i]}
                   alt={`Upload preview ${i + 1}`}
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
                   loading="lazy"
                 />
                 <button
@@ -101,17 +100,19 @@ export default function ImageUploader({ images = [], onChange }) {
                     e.stopPropagation();
                     handleRemoveImage(i);
                   }}
-                  className="absolute top-3 right-3 bg-white/90 p-1.5 rounded-full shadow-sm hover:bg-white transition-all"
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors duration-200"
                 >
                   <svg
-                    className="h-5 w-5 text-red-500"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
                     <path
-                      fillRule="evenodd"
-                      d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                      clipRule="evenodd"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
                 </button>
