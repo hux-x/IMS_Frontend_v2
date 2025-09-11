@@ -39,11 +39,11 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-6 bg-white p-6 rounded-2xl shadow-lg border border-gray-100"
+      className="space-y-6 bg-white p-6 rounded-lg shadow-lg border border-gray-200"
     >
-      <h2 className="text-2xl font-semibold text-gray-900">New Project</h2>
+      <h2 className="text-2xl font-semibold text-gray-800">New Project</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">
             Project Title <span className="text-red-500">*</span>
           </label>
@@ -52,22 +52,22 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
             value={formData.projectTitle}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
             placeholder="Enter project title"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">Client Name</label>
           <input
             name="clientName"
             value={formData.clientName}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
             placeholder="Enter client name"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">Client Email</label>
           <input
             type="email"
@@ -75,28 +75,28 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
             value={formData.clientEmail}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
             placeholder="Enter client email"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">Client Phone</label>
           <input
             type="tel"
             name="clientPhone"
             value={formData.clientPhone}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
             placeholder="Enter client phone"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">Status</label>
           <select
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
           >
             <option value="Proposed">Proposed</option>
             <option value="Mature">Mature</option>
@@ -105,48 +105,48 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">Priority</label>
           <select
             name="priority"
             value={formData.priority}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
           >
             <option value="High">High</option>
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
           </select>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">Start Date</label>
           <input
             type="date"
             name="startDate"
             value={formData.startDate}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
           />
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">End Date</label>
           <input
             type="date"
             name="endDate"
             value={formData.endDate}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
           />
         </div>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <label className="block text-sm font-medium text-gray-700">Description</label>
         <textarea
           name="description"
           value={formData.description}
           onChange={handleChange}
-          rows={4}
-          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          rows={5}
+          className="w-full p-4 border border-blue-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 shadow-sm"
           placeholder="Enter project description"
         />
       </div>
@@ -164,12 +164,12 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
           onChange={(designChecklist) => updateField('designChecklist', designChecklist)}
         />
       </div>
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-3">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200 transition-colors duration-200 shadow-sm"
             disabled={isSubmitting}
           >
             Cancel
@@ -177,12 +177,12 @@ export default function ProjectForm({ onSubmit, onCancel, initialData = {}, isSu
         )}
         <button
           type="submit"
-          className={`px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all ${
+          className={`px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors duration-200 shadow-sm ${
             isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
           }`}
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Creating...' : 'Create Project'}
+          {isSubmitting ? 'Submitting...' : 'Create Project'}
         </button>
       </div>
     </form>
