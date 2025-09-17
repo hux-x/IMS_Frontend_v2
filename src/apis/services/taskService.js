@@ -1,3 +1,4 @@
+// Updated taskService.js with file upload support
 import {
     getAllTasks,
     createTask,
@@ -24,24 +25,44 @@ const taskService = {
     },
 
     createTask: async (task) => {
-        const {assignedTo, title, description, attachments = [], deadline, startTime, teamId, priority = 'medium',todoChecklist } = task
-        return await createTask(assignedTo, title, description, attachments, deadline, startTime, teamId, priority,todoChecklist);
+        const {
+            assignedTo, 
+            title, 
+            description, 
+            files = [], // Changed from attachments to files to match frontend
+            deadline, 
+            startTime, 
+            teamId, 
+            priority = 'medium',
+            todoChecklist 
+        } = task;
+        
+        return await createTask(
+            assignedTo, 
+            title, 
+            description, 
+            files, // Pass files array directly
+            deadline, 
+            startTime, 
+            teamId, 
+            priority,
+            todoChecklist
+        );
     },
 
-    updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null,todoChecklist=null,status=null }) => {
-        return await updateTask(taskId,title,description,attachments,deadline,priority,todoChecklist,status);
+    updateTask: async (taskId, { title = null, description = null, attachments = null, deadline = null, priority = null, todoChecklist = null, status = null }) => {
+        return await updateTask(taskId, title, description, attachments, deadline, priority, todoChecklist, status);
     },
 
     deleteTask: async (taskId) => {
         return await deleteTask(taskId);
     },
 
-
     filteredTasks: async (filters = {}) => {
         const queryParams = Object.fromEntries(
             Object.entries(filters).filter(([_, v]) => v !== null && v !== undefined && v !== "" && v !== "All")
         );
-        console.log(queryParams)
+        console.log(queryParams);
         const queryString = new URLSearchParams(queryParams).toString();
 
         return await filteredTasks(queryString);
@@ -66,9 +87,11 @@ const taskService = {
     getBacklogTasks: async (limit = 10, offset = 0) => {
         return await getBacklogTasks(limit, offset);
     },
-    getAssigneesForFilteration: async()=>{
+    
+    getAssigneesForFilteration: async () => {
         return await getAssigneesForFiltering();
     },
+    
     getAllEmployeesForTeam: async () => {
         return await getAllEmployees();
     }

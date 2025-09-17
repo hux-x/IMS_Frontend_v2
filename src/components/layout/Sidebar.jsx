@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useContext } from 'react';
-import { AuthContext } from '@/context/AuthContext';
+import { AuthContext } from '@/context/authContext';
 
 const Sidebar = ({ isOpen }) => {
   const location = useLocation();
@@ -24,9 +24,8 @@ const Sidebar = ({ isOpen }) => {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin', 'employee'] },
     { name: 'Tasks', icon: CheckSquare, path: '/tasks', roles: ['admin', 'employee'] },
-    { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
+    // { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
     { name: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin', 'employee'] },
-    { name: 'Admin Panel', icon: Shield, path: '/admin', roles: ['admin'] },
     { name: 'Reports', icon: BarChart3, path: '/reports', roles: ['admin'] },
     { name: 'Teams', icon: Users, path: '/teams', roles: ['admin'] },
     { name: 'Employees', icon: UserCircle, path: '/employees', roles: ['admin'] },

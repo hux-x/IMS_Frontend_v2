@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useContext } from 'react';
-import { AuthContext } from '@/context/AuthContext'; // Updated to match your project structure
+import { AuthContext } from '@/context/authContext'; // Updated to match your project structure
 import authService from '@/apis/services/authService';
 import { toast } from 'react-toastify';
 

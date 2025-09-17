@@ -14,19 +14,15 @@ import { storeToken } from "@/apis/localStorage/tokenStorage";
 import { storeuserId } from "@/apis/localStorage/idStorage";
 
 const authService = {
-  registerEmployee: async (name, username, age, role, position, password) => {
+  registerEmployee: async ({name, username, age, role, position, password,email,department,status}) => {
     const response = await registerEmployee(
       name,
       username,
       age,
       role,
       position,
-      password
+      password,email,department,status
     );
-    if (response?.data?.token && response?.data?.userId) {
-      storeToken(response.data.token);
-      storeuserId(response.data.userId);
-    }
     return response;
   },
   login: async (username, password) => {

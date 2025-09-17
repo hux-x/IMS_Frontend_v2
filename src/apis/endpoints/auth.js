@@ -1,8 +1,8 @@
 // src/apis/endpoints/auth.js
 import client from "@/apis/apiClient/client";
 
-export const registerEmployee = async (name, username, age, role, position, password) => {
-  return await client.post("/employees/register", { name, username, age, role, position, password });
+export const registerEmployee = async (name, username, age, role, position, password,email,department,status) => {
+  return await client.post("/employees/register", { name, username, age, role, position, password,email,department,status });
 };
 
 export const login = async (username, password) => {

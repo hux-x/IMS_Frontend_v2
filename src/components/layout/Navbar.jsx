@@ -3,7 +3,7 @@ import { useState, useContext } from 'react';
 import { Bell, Menu, Search, User } from 'lucide-react';
 import Notifications from '@/components/ui/Notifications';
 import NavProfile from '@/components/ui/NavProfile';
-import { AuthContext } from '@/context/AuthContext';
+import { AuthContext } from '@/context/authContext';
 
 const Header = ({ onMenuClick = () => {} }) => {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -12,24 +12,10 @@ const Header = ({ onMenuClick = () => {} }) => {
 
   // Dummy user data (replace with dynamic fetch if needed)
   const user = {
-    name: userRole === 'admin' ? 'Admin User' : 'Employee User', // Placeholder, update with actual user data
+    name: userRole === 'admin' ? 'Admin' : 'Employee', // Placeholder, update with actual user data
     email: 'user@example.com', // Placeholder, update with actual user data
   };
 
-  const totalUnread = 5;
-
-  const dummyNotifications = [
-    {
-      type: 'New Message',
-      message: 'You have received a new message from John.',
-      createdAt: '2025-07-27 14:30',
-    },
-    {
-      type: 'System Alert',
-      message: 'Scheduled maintenance will occur at midnight.',
-      createdAt: '2025-07-27 09:15',
-    },
-  ];
 
   return (
     <>
@@ -58,25 +44,6 @@ const Header = ({ onMenuClick = () => {} }) => {
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg relative"
-              >
-                <Bell className="w-5 h-5" />
-                {totalUnread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {totalUnread}
-                  </span>
-                )}
-              </button>
-
-              {showNotifications && (
-                <Notifications notifications={dummyNotifications} />
-              )}
-            </div>
-
             {/* Profile */}
             <div className="relative">
               <button

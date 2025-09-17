@@ -12,6 +12,7 @@ import {
   Edit,
   Trash2
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const statusStyles = {
   "started": { text: "Not Started", bg: "bg-gray-100", textColor: "text-gray-800" },
@@ -28,6 +29,7 @@ const priorityStyles = {
 const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
   const [showChecklist, setShowChecklist] = useState(true);
   const [showAttachments, setShowAttachments] = useState(true);
+  console.log(task);
 
   const formatDate = (dateString) => {
     if (!dateString) return "Not set";
@@ -128,7 +130,7 @@ const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
             {task.teamId && (
               <div className="flex items-center gap-2">
                 <Users size={16} className="text-gray-500" />
-                <span>Team: {task.teamId?.name || "No team"}</span>
+                <Link to={`/teamdashboard/${task?.teamId?._id}`}>Team: {task?.teamId?.name || "No team"}</Link>
               </div>
             )}
           </div>
@@ -188,7 +190,7 @@ const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
                   task.attachments.map((attachment, index) => (
                     <div key={index} className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
                       <FileText size={14} />
-                      <a href={attachment} target="_blank" rel="noopener noreferrer">
+                      <a href={attachment} target="_blank" >
                         Attachment {index + 1}
                       </a>
                     </div>

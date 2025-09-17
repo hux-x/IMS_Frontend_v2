@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import taskService from "@/apis/services/taskService";
- const useTasks = () => {
+
+const useTasks = () => {
   const LIMIT = 9;
   const PAGE_SIZE = 9
   const [tasks, setTasks] = useState([]);
@@ -39,18 +40,15 @@ import taskService from "@/apis/services/taskService";
   };
 
   const handleUpdateTask = useCallback(async (taskId, updatedTask) => {
-  
     try {
-      
       const res = await taskService.updateTask(updatedTask._id, updatedTask);
-    
       setTasks(prev => 
         prev.map(task => task._id === taskId ? res.data.task : task)
       );
     } catch (err) {
       console.log(err);
     }
-  },[])
+  }, [])
 
   const handleDeleteTask = useCallback(async (taskId) => {
     try {
@@ -60,7 +58,7 @@ import taskService from "@/apis/services/taskService";
     } catch (err) {
       console.log(err);
     }
-  },[])
+  }, [])
 
   const getFilteredTasksFromTheServer = useCallback(async (queryParams = {}) => {
     setLoading(true);
@@ -79,7 +77,7 @@ import taskService from "@/apis/services/taskService";
     } finally {
       setLoading(false);
     }
-  },[])
+  }, [])
 
   // Helper function to get date ranges
   const getDateRange = (type) => {
@@ -161,11 +159,29 @@ import taskService from "@/apis/services/taskService";
   const addTask = useCallback(async (task) => {
     setLoading(true);
     try {
+      console.log('Creating task with data:', task);
       const res = await taskService.createTask(task);
+      console.log('Task created successfully:', res.data);
+      
       // Refresh the current view to show the new task
       applyFilters();
+      
+      // Optional: Show success message
+      // You can add a toast notification here if you have one
+      
     } catch (err) {
-      console.log(err);
+      console.error('Error creating task:', err);
+      
+      // Handle different error types
+      if (err.response?.status === 400) {
+        throw new Error(err.response.data.message || 'Invalid task data');
+      } else if (err.response?.status === 413) {
+        throw new Error('File size too large. Please choose smaller files.');
+      } else if (err.response?.status === 415) {
+        throw new Error('Unsupported file type. Please choose different files.');
+      } else {
+        throw new Error('Failed to create task. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -188,7 +204,6 @@ import taskService from "@/apis/services/taskService";
     }
   };
 
-
   useEffect(() => {
     // Get assignees on component mount
     const getAssignees = async () => {
@@ -196,7 +211,8 @@ import taskService from "@/apis/services/taskService";
         const res = await taskService.getAssigneesForFilteration();
         setAssignees(res?.data?.assignees || []);
       } catch (error) {
-        alert('error fetching assignees');
+        console.error('Error fetching assignees:', error);
+        // Don't show alert here, just log the error
       }
     };
     getAssignees();
@@ -204,8 +220,8 @@ import taskService from "@/apis/services/taskService";
     setPaginationParams(prev => ({ ...prev, pageNumber: 1 }));
   }, []);
 
-
-  return {tasks,
+  return {
+    tasks,
     loading,
     showCreateTask,
     setShowCreateTask,
@@ -221,4 +237,5 @@ import taskService from "@/apis/services/taskService";
     handleDeleteTask
   }
 }
+
 export default useTasks;

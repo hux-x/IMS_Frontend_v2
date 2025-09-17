@@ -4,7 +4,7 @@ import React from 'react';
 const EmployeeAttendanceTable = ({ 
   employees, 
   onStatusChange,
-  date = "Tuesday, July 29, 2025" 
+  date,
 }) => {
   const getInitials = (name) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();

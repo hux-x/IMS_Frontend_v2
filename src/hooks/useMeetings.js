@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import meetingService from '@/apis/services/meetingService';
 
 const useMeetings = () => {
@@ -8,7 +8,7 @@ const useMeetings = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
-    limit: 50,
+    limit: 100,
     offset: 0,
     totalCount: 0,
     hasMore: false
@@ -23,24 +23,40 @@ const useMeetings = () => {
     endDate: ''
   });
 
-  const fetchMeetings = useCallback(async (customFilters = {}) => {
+  // Use refs to avoid stale closures
+  const filtersRef = useRef(filters);
+  const paginationRef = useRef(pagination);
+
+  // Update refs when state changes
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
+
+  useEffect(() => {
+    paginationRef.current = pagination;
+  }, [pagination]);
+
+  const fetchMeetings = useCallback(async (isLoadMore = false, customFilters = null) => {
     try {
       setLoading(true);
       setError(null);
 
-      const finalFilters = { ...filters, ...customFilters };
-      const { status, date, searchQuery, employeeId, startDate, endDate } = finalFilters;
+      const currentFilters = customFilters || filtersRef.current;
+      const currentPagination = paginationRef.current;
+      
+      const { status, date, searchQuery, employeeId, startDate, endDate } = currentFilters;
 
       let response;
+      const offset = isLoadMore ? currentPagination.offset : 0;
 
       if (status === 'all' && !date && !searchQuery && !employeeId && !startDate && !endDate) {
-        response = await meetingService.getAllMeetings(pagination.limit, pagination.offset);
+        response = await meetingService.getAllMeetings(currentPagination.limit, offset);
       } else {
         const filterParams = {
-          limit: pagination.limit,
-          offset: pagination.offset,
+          limit: currentPagination.limit,
+          offset: offset,
           ...(status !== 'all' && { status }),
-          ...(date && { date }),
+          ...(date && { startDate: date, endDate: date }), // Send date as both startDate and endDate for exact date match
           ...(searchQuery && { title: searchQuery }),
           ...(employeeId && { employeeId }),
           ...(startDate && { startDate }),
@@ -52,11 +68,28 @@ const useMeetings = () => {
 
       if (response?.data) {
         const meetingsData = response.data.meetings || response.data;
-        setMeetings(meetingsData);
-        setFilteredMeetings(meetingsData);
+        
+        if (isLoadMore) {
+          // Append new meetings to existing ones
+          setMeetings(prev => [...prev, ...meetingsData]);
+          setFilteredMeetings(prev => [...prev, ...meetingsData]);
+        } else {
+          // Replace meetings for new search/filter
+          setMeetings(meetingsData);
+          setFilteredMeetings(meetingsData);
+        }
 
+        // Update pagination
         if (response.data.pagination) {
           setPagination(response.data.pagination);
+        } else {
+          // Fallback pagination calculation
+          setPagination(prev => ({
+            ...prev,
+            offset: offset + meetingsData.length,
+            totalCount: isLoadMore ? prev.totalCount : meetingsData.length,
+            hasMore: meetingsData.length === currentPagination.limit
+          }));
         }
       }
     } catch (err) {
@@ -65,7 +98,7 @@ const useMeetings = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, pagination.limit, pagination.offset]);
+  }, []); // Remove dependencies to prevent infinite loops
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -78,13 +111,16 @@ const useMeetings = () => {
     }
   }, []);
 
+  // Initial data loading
   useEffect(() => {
     fetchEmployees();
-  }, [fetchEmployees]);
-
-  useEffect(() => {
     fetchMeetings();
-  }, [fetchMeetings]);
+  }, [fetchEmployees, fetchMeetings]);
+
+  // Refetch when filters change
+  useEffect(() => {
+    fetchMeetings(false, filters);
+  }, [filters, fetchMeetings]);
 
   const createMeeting = async (meetingData) => {
     try {
@@ -103,6 +139,8 @@ const useMeetings = () => {
       const response = await meetingService.createMeeting(meetingData);
       
       if (response?.data) {
+        // Reset to first page and refresh
+        setPagination(prev => ({ ...prev, offset: 0 }));
         await fetchMeetings();
         return { success: true, data: response.data };
       }
@@ -185,7 +223,7 @@ const useMeetings = () => {
 
   const applyFilters = useCallback((newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
-    setPagination(prev => ({ ...prev, offset: 0 }));
+    setPagination(prev => ({ ...prev, offset: 0 })); // Reset pagination
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -202,12 +240,16 @@ const useMeetings = () => {
 
   const loadMore = useCallback(() => {
     if (pagination.hasMore && !loading) {
+      const newOffset = pagination.offset + pagination.limit;
       setPagination(prev => ({
         ...prev,
-        offset: prev.offset + prev.limit
+        offset: newOffset
       }));
+      
+      // Fetch more meetings and append them
+      fetchMeetings(true);
     }
-  }, [pagination.hasMore, loading]);
+  }, [pagination.hasMore, pagination.offset, pagination.limit, loading, fetchMeetings]);
 
   const refreshMeetings = useCallback(() => {
     setPagination(prev => ({ ...prev, offset: 0 }));

@@ -61,6 +61,8 @@ const Dashboard = () => {
   const meetings = dashboard?.meetings || [];
   const meetingCount = dashboard?.meetingCount || 0;
 
+  console.log(dashboard)
+
   const stats = [
     {
       title: "Task Performance",
@@ -209,7 +211,11 @@ const Dashboard = () => {
         {meetings.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {meetings.map((meeting) => (
-              <MeetingCard key={meeting._id} meeting={meeting} />
+              <MeetingCard 
+                key={meeting._id} 
+                meeting={meeting} 
+                onClick={() => setSelectedMeeting(meeting)}
+              />
             ))}
           </div>
         ) : (

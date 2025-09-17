@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, Filter, X, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, X, Calendar, Loader2 } from 'lucide-react';
 
 const MeetingFilters = ({
   searchQuery,
@@ -11,6 +11,8 @@ const MeetingFilters = ({
   onClearFilters,
   loading = false
 }) => {
+  const [isSearching, setIsSearching] = useState(false);
+  
   const statusOptions = [
     { value: 'all', label: 'All Status', count: null },
     { value: 'planned', label: 'Planned', count: null },
@@ -19,6 +21,23 @@ const MeetingFilters = ({
   ];
 
   const hasActiveFilters = searchQuery || filterStatus !== 'all' || filterDate;
+
+  // Show loading indicator while search is being debounced
+  useEffect(() => {
+    if (searchQuery) {
+      setIsSearching(true);
+      const timer = setTimeout(() => {
+        setIsSearching(false);
+      }, 500); // Match the debounce delay
+
+      return () => {
+        clearTimeout(timer);
+        setIsSearching(false);
+      };
+    } else {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
@@ -52,9 +71,21 @@ const MeetingFilters = ({
               value={searchQuery}
               onChange={handleSearchChange}
               disabled={loading}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
             />
+            {/* Search loading indicator */}
+            {isSearching && searchQuery && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 size={16} className="animate-spin text-gray-400" />
+              </div>
+            )}
           </div>
+          {/* Search hint */}
+          {searchQuery && (
+            <p className="text-xs text-gray-500 mt-1 ml-1">
+              {isSearching ? 'Searching...' : `Showing results for "${searchQuery}"`}
+            </p>
+          )}
         </div>
 
         {/* Status Filter */}
@@ -117,6 +148,7 @@ const MeetingFilters = ({
           {searchQuery && (
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
               Search: "{searchQuery}"
+              {isSearching && <Loader2 size={12} className="animate-spin" />}
               <button
                 onClick={() => setSearchQuery('')}
                 className="hover:bg-blue-200 rounded-full p-0.5"

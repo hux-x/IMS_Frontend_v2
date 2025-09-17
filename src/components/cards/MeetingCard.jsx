@@ -1,8 +1,9 @@
 import { Users, Calendar, Eye } from "lucide-react";
-const MeetingCard = ({ meeting }) => (
+
+const MeetingCard = ({ meeting, onClick }) => (
   <div
     className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-pointer hover:border-blue-300"
-    
+    onClick={onClick}
   >
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1 min-w-0">

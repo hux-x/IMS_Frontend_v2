@@ -16,7 +16,7 @@ const priorityStyles = {
 };
 
 const TaskCard = ({ task,onUpdate,onDelete }) => {
-  console.log('render')
+  console.log('task')
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);

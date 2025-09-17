@@ -77,6 +77,19 @@ const UpdateTaskModal = ({ task, onClose, onSave }) => {
     setEditedTask(prev => ({ ...prev, attachments: updatedAttachments }));
   };
 
+  const handleAssignedToChange = (e) => {
+    const newName = e.target.value;
+    setEditedTask(prev => ({
+      ...prev,
+      assignedTo: prev.assignedTo ? {
+        ...prev.assignedTo,
+        name: newName
+      } : {
+        name: newName
+      }
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     // Prepare the task data for saving
@@ -195,10 +208,7 @@ const UpdateTaskModal = ({ task, onClose, onSave }) => {
                 type="text"
                 name="assignedTo"
                 value={editedTask.assignedTo?.name || ""}
-                onChange={(e) => setEditedTask(prev => ({
-                  ...prev,
-                  assignedTo: { ...prev.assignedTo, name: e.target.value }
-                }))}
+                onChange={handleAssignedToChange}
                 className="w-full border rounded p-2"
                 placeholder="Assignee name"
               />

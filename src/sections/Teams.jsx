@@ -14,42 +14,40 @@ const Teams = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
-  const [employees, setEmployees] = useState([]); // All employees for team member selection
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-
 
   // Transform API response to match component structure
   const transformTeamData = (apiTeams) => {
     return apiTeams.map((team) => ({
       id: team._id,
       name: team.name,
-      description: team.description,
-      lead: {
+      description: team.description || '',
+      lead: team.teamLead ? {
         id: team.teamLead._id,
         name: team.teamLead.name,
-        email: team.teamLead.username, // Using username as email placeholder
+        email: team.teamLead.username,
         role: team.teamLead.role,
         position: team.teamLead.position,
-      },
-      members: team.members.map((member) => ({
+      } : null,
+      members: (team.members || []).map((member) => ({
         id: member._id,
         name: member.name,
-        email: member.username, // Using username as email placeholder
+        email: member.username,
         role: member.role,
         position: member.position,
       })),
-      createdBy: {
+      createdBy: team.createdBy ? {
         id: team.createdBy._id,
         name: team.createdBy.name,
         email: team.createdBy.username,
         role: team.createdBy.role,
         position: team.createdBy.position,
-      },
-      color: generateTeamColor(team._id), // Generate a color based on team ID
+      } : null,
+      color: generateTeamColor(team._id),
       createdAt: new Date(team.createdAt).toLocaleDateString(),
-      status: "Active", // Default status - you might want to add this to your API
+      status: "Active",
       teamTasks: team.teamTasks,
       teamGroupChat: team.teamGroupChat,
       updatedAt: team.updatedAt,
@@ -59,14 +57,8 @@ const Teams = () => {
   // Generate a consistent color for each team based on ID
   const generateTeamColor = (teamId) => {
     const colors = [
-      "#4A90E2",
-      "#7ED321",
-      "#9013FE",
-      "#F5A623",
-      "#BD10E0",
-      "#50E3C2",
-      "#B8E986",
-      "#4A4A4A",
+      "#4A90E2", "#7ED321", "#9013FE", "#F5A623",
+      "#BD10E0", "#50E3C2", "#B8E986", "#4A4A4A",
     ];
     // Use a simple hash function to get consistent color
     const hash = teamId.split("").reduce((a, b) => {
@@ -135,7 +127,7 @@ const Teams = () => {
       (team) =>
         team.name.toLowerCase().includes(lowercasedSearchTerm) ||
         team?.description?.toLowerCase()?.includes(lowercasedSearchTerm) ||
-        team.lead.name.toLowerCase().includes(lowercasedSearchTerm) ||
+        team.lead?.name?.toLowerCase()?.includes(lowercasedSearchTerm) ||
         team.members.some((member) =>
           member.name.toLowerCase().includes(lowercasedSearchTerm)
         )
@@ -160,6 +152,7 @@ const Teams = () => {
       if (res?.data.teams) {
         const transformedTeams = transformTeamData(res.data.teams);
         setTeams(transformedTeams);
+        setFilteredTeams(transformedTeams);
       }
 
       setIsCreateModalOpen(false);
@@ -172,13 +165,17 @@ const Teams = () => {
   const handleUpdateTeam = async (updatedTeamData) => {
     try {
       setError(null);
+      console.log("Updating team with data:", updatedTeamData);
+      
       // Extract required parameters for updateTeam API
-      const { id: teamId, name, lead } = updatedTeamData;
+      const { id: teamId, name, teamLead, description, members } = updatedTeamData;
 
       await teamService.updateTeam({
         teamId,
         name,
-        teamLead: lead.id,
+        teamLead,
+        description,
+        members
       });
 
       // Refresh the teams list after successful update
@@ -186,9 +183,13 @@ const Teams = () => {
       if (res?.data.teams) {
         const transformedTeams = transformTeamData(res.data.teams);
         setTeams(transformedTeams);
+        setFilteredTeams(transformedTeams);
+        
         // Update selected team if modal is open
         const updatedTeam = transformedTeams.find((team) => team.id === teamId);
-        setSelectedTeam(updatedTeam);
+        if (updatedTeam) {
+          setSelectedTeam(updatedTeam);
+        }
       }
     } catch (err) {
       console.error("Error updating team:", err);
@@ -203,6 +204,7 @@ const Teams = () => {
 
       // Remove team from state after successful deletion
       setTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
+      setFilteredTeams((prevTeams) => prevTeams.filter((team) => team.id !== teamId));
       setIsDetailsModalOpen(false);
       setSelectedTeam(null);
     } catch (err) {
@@ -222,9 +224,13 @@ const Teams = () => {
       if (res?.data.teams) {
         const transformedTeams = transformTeamData(res.data.teams);
         setTeams(transformedTeams);
+        setFilteredTeams(transformedTeams);
+        
         // Update selected team if modal is open
         const updatedTeam = transformedTeams.find((team) => team.id === teamId);
-        setSelectedTeam(updatedTeam);
+        if (updatedTeam) {
+          setSelectedTeam(updatedTeam);
+        }
       }
     } catch (err) {
       console.error("Error adding team member:", err);
@@ -242,9 +248,13 @@ const Teams = () => {
       if (res?.data.teams) {
         const transformedTeams = transformTeamData(res.data.teams);
         setTeams(transformedTeams);
+        setFilteredTeams(transformedTeams);
+        
         // Update selected team if modal is open
         const updatedTeam = transformedTeams.find((team) => team.id === teamId);
-        setSelectedTeam(updatedTeam);
+        if (updatedTeam) {
+          setSelectedTeam(updatedTeam);
+        }
       }
     } catch (err) {
       console.error("Error removing team member:", err);
@@ -262,9 +272,13 @@ const Teams = () => {
       if (res?.data.teams) {
         const transformedTeams = transformTeamData(res.data.teams);
         setTeams(transformedTeams);
+        setFilteredTeams(transformedTeams);
+        
         // Update selected team if modal is open
         const updatedTeam = transformedTeams.find((team) => team.id === teamId);
-        setSelectedTeam(updatedTeam);
+        if (updatedTeam) {
+          setSelectedTeam(updatedTeam);
+        }
       }
     } catch (err) {
       console.error("Error updating member role:", err);
@@ -351,13 +365,13 @@ const Teams = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreateTeam={handleCreateTeam}
-        allUsers={employees} // Pass fetched employees from API
+        allUsers={employees}
       />
       <TeamDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={() => setIsDetailsModalOpen(false)}
         team={selectedTeam}
-        allUsers={employees} // Pass fetched employees from API
+        allUsers={employees}
         onUpdateTeam={handleUpdateTeam}
         onDeleteTeam={handleDeleteTeam}
         onAddMember={handleAddTeamMember}

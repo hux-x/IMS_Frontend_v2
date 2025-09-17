@@ -1,6 +1,6 @@
 import {createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam, addTeamMember, removeTeamMember, getTeamMembers, updateMemberRole, getTeamLead} from "@/apis/endpoints/teams";
 
-  const teamService = {
+const teamService = {
   createTeam: async ({ name, members, teamLeadId }) => {
     return await createTeam(name, members, teamLeadId);
   },
@@ -10,8 +10,8 @@ import {createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam, addTeamMem
   getTeamById: async ( teamId ) => {
     return await getTeamById(teamId);
   },
-  updateTeam: async ({ teamId, name, teamLead }) => {
-    return await updateTeam(teamId, name, teamLead);
+  updateTeam: async ({ teamId, name, teamLead, description, members }) => {
+    return await updateTeam(teamId, name, teamLead, description, members);
   },
   deleteTeam: async ({ teamId }) => {
     return await deleteTeam(teamId);
@@ -31,6 +31,6 @@ import {createTeam, getAllTeams, getTeamById, updateTeam, deleteTeam, addTeamMem
   getTeamLead: async ({ teamId }) => {
     return await getTeamLead(teamId);
   },
-  
 };
-export default teamService
+
+export default teamService;

@@ -14,10 +14,13 @@ export const getTeamById = async (teamId) => {
   return await client.get(`/teams/teams/${teamId}`);
 };
 
-export const updateTeam = async (teamId, name, teamLead) => {
+export const updateTeam = async (teamId, name, teamLead, description, members) => {
   const body = {};
-  if (name) body.name = name;
-  if (teamLead) body.teamLead = teamLead;
+  if (name !== undefined) body.name = name;
+  if (teamLead !== undefined) body.teamLead = teamLead;
+  if (description !== undefined) body.description = description;
+  if (members !== undefined) body.members = members;
+  
   return await client.patch(`/teams/updateteam/${teamId}`, body);
 };
 
