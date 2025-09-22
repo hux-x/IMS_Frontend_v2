@@ -46,7 +46,7 @@ const TeamCard = ({ team, onClick }) => {
 
             <div className="flex items-center text-gray-700 text-sm mb-2">
                 <FaCrown className="mr-2 text-yellow-500" />
-                <span>Lead: {team.lead ? team.lead.name : 'N/A'}</span>
+                <span>Lead: {team.lead ? team.lead.name : team.teamLead.name}</span>
             </div>
 
             <div className="flex items-center text-gray-700 text-sm mb-4">

@@ -174,7 +174,7 @@ const meetingService = {
     }
   },
 
-  validateMeetingTime: (startTime, endTime) => {
+  validateMeetingTime: (startTime, endTime, status) => {
     const start = new Date(startTime);
     const end = new Date(endTime);
 
@@ -186,12 +186,12 @@ const meetingService = {
       return { isValid: false, error: "End time must be after start time" };
     }
 
-    if (start < new Date()) {
-      return {
-        isValid: false,
-        error: "Meeting cannot be scheduled in the past",
-      };
-    }
+    // if (start < new Date() && status !== 'planned') {
+    //   return {
+    //     isValid: false,
+    //     error: "Meeting cannot be scheduled in the past",
+    //   };
+    // }
 
     return { isValid: true };
   },

@@ -214,7 +214,7 @@ const MeetingList = ({
                     <div className="flex -space-x-2">
                       {meeting.employees.slice(0, 5).map((employee, index) => (
                         <div
-                          key={employee._id || index}
+                          key={index}
                           className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-xs font-medium text-gray-600 border-2 border-white"
                           title={employee.name}
                         >

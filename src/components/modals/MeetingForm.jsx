@@ -72,7 +72,6 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
     status: 'planned',
     clients: [{ name: '', email: '' }],
     location: '',
-    meetingLink: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -89,7 +88,7 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
         status: meeting.status || 'planned',
         clients: getClients(meeting),
         location: meeting.location || '',
-        meetingLink: meeting.meetingLink || meeting.link || ''
+      
       });
     } else {
       // Reset form for new meeting
@@ -102,7 +101,7 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
         status: 'planned',
         clients: [{ name: '', email: '' }],
         location: '',
-        meetingLink: ''
+       
       });
     }
     setErrors({});
@@ -131,7 +130,8 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
         newErrors.endTime = 'End time must be after start time';
       }
 
-      // Check if start time is in the past (only for new meetings)
+      // Only check if start time is in the past for NEW meetings
+      // Allow updating existing meetings regardless of their timing
       if (!meeting && startDate < new Date()) {
         newErrors.startTime = 'Start time cannot be in the past';
       }
@@ -230,8 +230,23 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
     }
   };
 
+  // Check if the meeting is in the past (for UI feedback)
+  const isMeetingInPast = meeting && meeting.startTime && new Date(meeting.startTime) < new Date();
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Show info banner for past meetings */}
+      {isMeetingInPast && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+          <div className="flex items-center gap-2 text-blue-800">
+            <AlertCircle size={16} />
+            <span className="text-sm font-medium">
+              This meeting has already occurred. You can still update details and status.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -325,17 +340,7 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
             disabled={loading}
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Meeting Link</label>
-          <input
-            type="url"
-            value={formData.meetingLink}
-            onChange={(e) => handleInputChange('meetingLink', e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="https://example.com/meeting"
-            disabled={loading}
-          />
-        </div>
+      
       </div>
 
       {/* Employees */}

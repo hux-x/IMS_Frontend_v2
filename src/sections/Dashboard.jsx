@@ -30,6 +30,30 @@ const Dashboard = () => {
   const { handleUpdateTask, handleDeleteTask } = useTasks();
   const [selectedMeeting, setSelectedMeeting] = useState(null);
 
+  // Enhanced update handler with page refresh
+  const handleTaskUpdate = async (taskId, updateData) => {
+    try {
+      await handleUpdateTask(taskId, updateData);
+      // Refresh the page after successful update
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to update task:", error);
+      // Optionally show an error message to the user
+    }
+  };
+
+  // Enhanced delete handler with page refresh
+  const handleTaskDelete = async (taskId) => {
+    try {
+      await handleDeleteTask(taskId);
+      // Refresh the page after successful deletion
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      // Optionally show an error message to the user
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -142,10 +166,7 @@ const Dashboard = () => {
             <p className="font-medium text-gray-700">Total Assigned Tasks</p>
             <p className="text-2xl font-bold text-orange-600">{assignedTasks.length}</p>
           </div>
-          <div className="bg-white rounded-lg p-4">
-            <p className="font-medium text-gray-700">Team Notifications</p>
-            <p className="text-2xl font-bold text-red-600">{unreadCount}</p>
-          </div>
+        
         </div>
       </div>
 
@@ -161,8 +182,8 @@ const Dashboard = () => {
               <TaskCard 
                 key={task._id} 
                 task={task} 
-                onDelete={handleDeleteTask} 
-                onUpdate={handleUpdateTask} 
+                onDelete={handleTaskDelete} 
+                onUpdate={handleTaskUpdate} 
               />
             ))}
           </div>
@@ -187,8 +208,8 @@ const Dashboard = () => {
               <TaskCard 
                 key={task._id} 
                 task={task} 
-                onDelete={handleDeleteTask} 
-                onUpdate={handleUpdateTask}
+                onDelete={handleTaskDelete} 
+                onUpdate={handleTaskUpdate}
                 showPriority={true}
               />
             ))}
@@ -311,20 +332,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className={`h-3 w-3 rounded-full ${
-                employeeData.isOnline ? 'bg-green-500' : 'bg-gray-400'
-              }`}></div>
-              <div>
-                <p className="text-sm text-gray-500">Status</p>
-                <p className="font-medium text-gray-900">
-                  {employeeData.isOnline ? 'Online' : 'Offline'}
-                  {employeeData.available && (
-                    <span className="ml-2 text-green-600 text-sm">• Available</span>
-                  )}
-                </p>
-              </div>
-            </div>
+           
 
             <div className="flex items-center gap-3">
               <div className="h-5 w-5 text-gray-400">#</div>

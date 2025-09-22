@@ -162,7 +162,8 @@ const useMeetings = () => {
       if (updateData.startTime && updateData.endTime) {
         const validation = meetingService.validateMeetingTime(
           updateData.startTime,
-          updateData.endTime
+          updateData.endTime,
+          updateData.status
         );
 
         if (!validation.isValid) {
