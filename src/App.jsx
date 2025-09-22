@@ -18,38 +18,55 @@ import TeamDashboard from './pages/TeamDashboard';
 import ProjectProposed from '@/sections/ProjectProposed';
 import Bugs from '@/sections/Bugs';
 import MeetingDashboard from './sections/Meetings';
-
+import { ChatProvider } from './context/ChatContext';
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, userRole, loading } = React.useContext(AuthContext);
   
   if (loading) return <div>Loading...</div>;
-  
   if (!isAuthenticated) return <Navigate to="/login" />;
-  
   if (allowedRoles && !allowedRoles.includes(userRole)) {
     return <Navigate to="/dashboard" />;
   }
-  
+  return children;
+};
+
+// 👇 New PublicRoute
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading } = React.useContext(AuthContext);
+
+  if (loading) return <div>Loading...</div>;
+  if (isAuthenticated) return <Navigate to="/dashboard" />; // 👈 redirect logged-in users
   return children;
 };
 
 function App() {
   return (
     <AuthProvider>
+      <ChatProvider>
       <Routes>
-        {/* Public Route: Login page as the entry point */}
-        <Route path="/login" element={<Login />} />
+        {/* Public Route: Login page */}
+        <Route 
+          path="/login" 
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } 
+        />
 
         {/* Private Routes wrapped in Layout with role-based access */}
-        <Route path="/" element={
-          <PrivateRoute>
-            <Layout />
-          </PrivateRoute>
-        }>
-          {/* Default redirect to login if not authenticated, otherwise to dashboard */}
-          <Route index element={<Navigate to="/login" />} />
+        <Route 
+          path="/" 
+          element={
+            <PrivateRoute>
+              <Layout />
+            </PrivateRoute>
+          }
+        >
+          {/* Default redirect */}
+          <Route index element={<Navigate to="/dashboard" />} />
 
-          {/* Common routes accessible to both roles */}
+          {/* Common routes */}
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="chat" element={<Chats />} />
@@ -76,30 +93,20 @@ function App() {
               <AdminPanel />
             </PrivateRoute>
           } />
+
           <Route path="teamdashboard" element={<TeamDashboard />} />
+          <Route path="teamdashboard/:teamId" element={<TeamDashboard />} />
           <Route path="projectproposed" element={<ProjectProposed />} />
           <Route path="bugs" element={<Bugs />} />
           <Route path="meetings" element={<MeetingDashboard />} />
-
-          <Route path="teamdashboard/:teamId" element={<TeamDashboard />} />
         </Route>
 
-        {/* Catch-all redirect to login */}
+        {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+      <ToastContainer position="top-right" autoClose={3000} />
+      </ChatProvider>
     </AuthProvider>
   );
 }

@@ -24,7 +24,7 @@ const Sidebar = ({ isOpen }) => {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin', 'employee'] },
     { name: 'Tasks', icon: CheckSquare, path: '/tasks', roles: ['admin', 'employee'] },
-    // { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
+    { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
     { name: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin', 'employee'] },
     { name: 'Reports', icon: BarChart3, path: '/reports', roles: ['admin'] },
     { name: 'Teams', icon: Users, path: '/teams', roles: ['admin'] },

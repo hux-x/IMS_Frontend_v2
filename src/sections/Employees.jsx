@@ -132,7 +132,7 @@ export default function EmployeeList() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button 
-            className="flex items-center justify-center gap-2 w-[174px] h-[44px] px-[11px] bg-[#C81E1E] rounded-[12px] hover:bg-[#B81E1E] transition-colors disabled:opacity-50"
+  className="flex items-center justify-center gap-2 w-[174px] h-[44px] px-[11px] bg-[rgb(139,184,134)] rounded-[12px] hover:bg-[#B81E1E] transition-colors disabled:opacity-50"
             onClick={openAddEmployeeModal}
             disabled={loading}
           >

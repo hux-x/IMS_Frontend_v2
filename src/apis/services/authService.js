@@ -28,6 +28,7 @@ const authService = {
   login: async (username, password) => {
     const response = await login(username, password);
     if (response?.data?.token && response?.data?.userId) {
+      console.log(response.data.token)
       storeToken(response.data.token);
       storeuserId(response.data.userId);
     }

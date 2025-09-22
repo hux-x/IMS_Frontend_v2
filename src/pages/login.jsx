@@ -36,11 +36,6 @@ const Login = () => {
     <div className="flex items-center justify-center min-h-screen bg-green-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
         <h2 className="text-xl font-bold text-center text-gray-700">Sign in to your account</h2>
-        <div className="space-y-2">
-          <p className="text-sm text-gray-600">Demo Login:</p>
-          <p className="px-4 py-2 bg-green-200 rounded">Admin (admin / admin123)</p>
-          <p className="px-4 py-2 bg-blue-200 rounded">Employee (employee1 / emp123)</p>
-        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
@@ -74,9 +69,6 @@ const Login = () => {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-600">
-          Don't have an account? <Link to="/register" className="text-green-500 hover:underline">Sign up</Link>
-        </p>
       </div>
     </div>
   );

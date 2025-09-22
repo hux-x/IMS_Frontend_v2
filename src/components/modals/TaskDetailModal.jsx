@@ -10,7 +10,11 @@ import {
   ChevronDown, 
   ChevronUp,
   Edit,
-  Trash2
+  Trash2,
+  Download,
+  Eye,
+  Image,
+  File
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -24,6 +28,161 @@ const priorityStyles = {
   "high": { text: "High", bg: "bg-red-100", textColor: "text-red-800" },
   "medium": { text: "Medium", bg: "bg-yellow-100", textColor: "text-yellow-800" },
   "low": { text: "Low", bg: "bg-gray-100", textColor: "text-gray-800" }
+};
+
+// File preview component
+const FilePreview = ({ url, fileName, onClose }) => {
+  const fileExtension = fileName?.split('.').pop()?.toLowerCase() || url.split('.').pop()?.toLowerCase();
+  
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
+  const isPDF = fileExtension === 'pdf';
+  
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-[60]" style={{backgroundColor: 'rgba(0, 0, 0, 0.8)'}}>
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b">
+          <h3 className="text-lg font-semibold truncate">{fileName || 'File Preview'}</h3>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 p-1"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="p-4 h-[calc(90vh-80px)] overflow-auto">
+          {isImage ? (
+            <div className="flex justify-center">
+              <img 
+                src={url} 
+                alt={fileName}
+                className="max-w-full max-h-full object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div className="hidden text-center text-gray-500">
+                <File size={48} className="mx-auto mb-2" />
+                <p>Unable to preview image</p>
+              </div>
+            </div>
+          ) : isPDF ? (
+            <iframe 
+              src={`${url}#toolbar=1`}
+              className="w-full h-full border-0"
+              title={fileName}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-gray-500">
+              <File size={48} className="mb-4" />
+              <p className="text-lg mb-2">Preview not available</p>
+              <p className="text-sm mb-4">This file type cannot be previewed in the browser</p>
+              <a
+                href={url}
+                download={fileName}
+                className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                <Download size={16} />
+                Download File
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Attachment item component
+const AttachmentItem = ({ url, index }) => {
+  const [previewOpen, setPreviewOpen] = useState(false);
+  
+  // Extract filename from URL
+  const getFileName = (url) => {
+    try {
+      const urlPath = new URL(url).pathname;
+      const fileName = urlPath.split('/').pop();
+      return fileName || `attachment-${index + 1}`;
+    } catch {
+      return `attachment-${index + 1}`;
+    }
+  };
+  
+  const fileName = getFileName(url);
+  const fileExtension = fileName.split('.').pop()?.toLowerCase();
+  
+  // Get file type icon and info
+  const getFileInfo = (extension) => {
+    const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+    const documentTypes = ['pdf', 'doc', 'docx', 'txt', 'rtf'];
+    
+    if (imageTypes.includes(extension)) {
+      return { icon: Image, type: 'Image', color: 'text-green-600' };
+    } else if (documentTypes.includes(extension)) {
+      return { icon: FileText, type: 'Document', color: 'text-blue-600' };
+    } else {
+      return { icon: File, type: 'File', color: 'text-gray-600' };
+    }
+  };
+  
+  const fileInfo = getFileInfo(fileExtension);
+  const IconComponent = fileInfo.icon;
+  
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+  
+  const canPreview = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf'].includes(fileExtension);
+  
+  return (
+    <>
+      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <IconComponent size={20} className={fileInfo.color} />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{fileName}</p>
+            <p className="text-xs text-gray-500">{fileInfo.type}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2 ml-4">
+          {canPreview && (
+            <button
+              onClick={() => setPreviewOpen(true)}
+              className="flex items-center gap-1 bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs hover:bg-gray-300 transition-colors"
+              title="Preview file"
+            >
+              <Eye size={14} />
+              Preview
+            </button>
+          )}
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1 bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors"
+            title="Download file"
+          >
+            <Download size={14} />
+            Download
+          </button>
+        </div>
+      </div>
+      
+      {previewOpen && (
+        <FilePreview 
+          url={url}
+          fileName={fileName}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
+    </>
+  );
 };
 
 const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
@@ -185,15 +344,14 @@ const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
             </button>
             
             {showAttachments && (
-              <div className="p-3 space-y-2">
+              <div className="p-3 space-y-3">
                 {task.attachments?.length > 0 ? (
                   task.attachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
-                      <FileText size={14} />
-                      <a href={attachment} target="_blank" >
-                        Attachment {index + 1}
-                      </a>
-                    </div>
+                    <AttachmentItem
+                      key={index}
+                      url={attachment}
+                      index={index}
+                    />
                   ))
                 ) : (
                   <p className="text-gray-500 text-sm">No attachments</p>

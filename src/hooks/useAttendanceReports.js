@@ -1,5 +1,5 @@
 // src/hooks/useAttendanceReports.js
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import attendanceService from '@/apis/services/attendanceService';
 import authService from '@/apis/services/authService';
 
@@ -25,6 +25,10 @@ export const useAttendanceReports = () => {
     endDate: ''
   });
 
+  // Add ref to track current request and prevent race conditions
+  const currentRequestRef = useRef(null);
+  const isInitialMount = useRef(true);
+
   // Fetch all employees for dropdown
   const fetchEmployees = useCallback(async () => {
     try {
@@ -39,12 +43,25 @@ export const useAttendanceReports = () => {
   }, []);
 
   // Generate monthly report
-  const generateMonthlyReport = useCallback(async (targetMonth = month, targetYear = year) => {
+  const generateMonthlyReport = useCallback(async (targetMonth, targetYear) => {
+    // Use current state if no parameters provided
+    const queryMonth = targetMonth !== undefined ? targetMonth : month;
+    const queryYear = targetYear !== undefined ? targetYear : year;
+    
+    const requestId = `monthly_${queryMonth}_${queryYear}_${Date.now()}`;
+    currentRequestRef.current = requestId;
+    
     setLoading(true);
     setError(null);
     
     try {
-      const response = await attendanceService.generateAttendanceReport(targetMonth, targetYear);
+      const response = await attendanceService.generateAttendanceReport(queryMonth, queryYear);
+      
+      // Check if this request is still current
+      if (currentRequestRef.current !== requestId) {
+        console.log('Request cancelled - newer request in progress');
+        return;
+      }
       
       if (response?.data?.report) {
         const { report } = response.data;
@@ -65,30 +82,55 @@ export const useAttendanceReports = () => {
           totalAbsent: totalDays - totalPresent,
           totalDays: totalDays / totalEmployees // Average days per employee
         });
+      } else {
+        // Clear data if no report found
+        setReports([]);
+        setSummary({
+          totalEmployees: 0,
+          averageAttendance: 0,
+          totalWorkingHours: 0,
+          totalPresent: 0,
+          totalAbsent: 0
+        });
       }
     } catch (err) {
-      console.error('Error generating report:', err);
-      setError('Failed to generate report');
-      setReports([]);
-      setSummary({
-        totalEmployees: 0,
-        averageAttendance: 0,
-        totalWorkingHours: 0,
-        totalPresent: 0,
-        totalAbsent: 0
-      });
+      // Only handle error if this request is still current
+      if (currentRequestRef.current === requestId) {
+        console.error('Error generating report:', err);
+        setError('Failed to generate report');
+        setReports([]);
+        setSummary({
+          totalEmployees: 0,
+          averageAttendance: 0,
+          totalWorkingHours: 0,
+          totalPresent: 0,
+          totalAbsent: 0
+        });
+      }
     } finally {
-      setLoading(false);
+      // Only set loading false if this request is still current
+      if (currentRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
-  }, [month, year]);
+  }, []); // Remove dependencies to prevent infinite loops
 
   // Get attendance history for specific employee or date range
   const getAttendanceHistory = useCallback(async (startDate, endDate, employeeId = null) => {
+    const requestId = `history_${startDate}_${endDate}_${employeeId}_${Date.now()}`;
+    currentRequestRef.current = requestId;
+    
     setLoading(true);
     setError(null);
     
     try {
       const response = await attendanceService.getAttendanceHistory(startDate, endDate, employeeId);
+      
+      // Check if this request is still current
+      if (currentRequestRef.current !== requestId) {
+        console.log('Request cancelled - newer request in progress');
+        return;
+      }
       
       if (response?.data?.history) {
         // Transform history data for reports table
@@ -126,22 +168,51 @@ export const useAttendanceReports = () => {
           totalAbsent: totalRecords - presentRecords.length,
           totalDays: totalRecords
         });
+      } else {
+        // Clear data if no history found
+        setReports([]);
+        setSummary({
+          totalEmployees: 0,
+          averageAttendance: 0,
+          totalWorkingHours: 0,
+          totalPresent: 0,
+          totalAbsent: 0
+        });
       }
     } catch (err) {
-      console.error('Error fetching attendance history:', err);
-      setError('Failed to fetch attendance history');
+      // Only handle error if this request is still current
+      if (currentRequestRef.current === requestId) {
+        console.error('Error fetching attendance history:', err);
+        setError('Failed to fetch attendance history');
+        setReports([]);
+      }
     } finally {
-      setLoading(false);
+      // Only set loading false if this request is still current
+      if (currentRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
   }, []);
 
   // Get attendance statistics
-  const getAttendanceStats = useCallback(async (targetMonth = month, targetYear = year) => {
+  const getAttendanceStats = useCallback(async (targetMonth, targetYear) => {
+    const queryMonth = targetMonth !== undefined ? targetMonth : month;
+    const queryYear = targetYear !== undefined ? targetYear : year;
+    
+    const requestId = `stats_${queryMonth}_${queryYear}_${Date.now()}`;
+    currentRequestRef.current = requestId;
+    
     setLoading(true);
     setError(null);
     
     try {
-      const response = await attendanceService.getAttendanceStats(targetMonth, targetYear);
+      const response = await attendanceService.getAttendanceStats(queryMonth, queryYear);
+      
+      // Check if this request is still current
+      if (currentRequestRef.current !== requestId) {
+        console.log('Request cancelled - newer request in progress');
+        return;
+      }
       
       if (response?.data) {
         const { overall, departmentStats } = response.data;
@@ -156,12 +227,18 @@ export const useAttendanceReports = () => {
         });
       }
     } catch (err) {
-      console.error('Error fetching attendance stats:', err);
-      setError('Failed to fetch attendance statistics');
+      // Only handle error if this request is still current
+      if (currentRequestRef.current === requestId) {
+        console.error('Error fetching attendance stats:', err);
+        setError('Failed to fetch attendance statistics');
+      }
     } finally {
-      setLoading(false);
+      // Only set loading false if this request is still current
+      if (currentRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
-  }, [month, year]);
+  }, []); // Remove dependencies to prevent infinite loops
 
   // Export report data
   const exportReport = useCallback((format = 'csv') => {
@@ -213,15 +290,34 @@ export const useAttendanceReports = () => {
     }
   }, [reports, month, year]);
 
-  // Initialize data
+  // Refresh data function
+  const refreshData = useCallback(() => {
+    if (selectedEmployee) {
+      // If an employee is selected, get their history
+      const startDate = new Date(year, month, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      getAttendanceHistory(startDate, endDate, selectedEmployee);
+    } else if (dateRange.startDate && dateRange.endDate) {
+      // If date range is set, get history for that range
+      getAttendanceHistory(dateRange.startDate, dateRange.endDate, null);
+    } else {
+      // Otherwise get monthly report
+      generateMonthlyReport(month, year);
+    }
+  }, [selectedEmployee, month, year, dateRange, generateMonthlyReport, getAttendanceHistory]);
+
+  // Initialize employees
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  // Generate report when month/year changes
+  // Load initial data only once on mount
   useEffect(() => {
-    generateMonthlyReport();
-  }, [generateMonthlyReport]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      generateMonthlyReport(month, year);
+    }
+  }, []); // Empty dependency array - only run once
 
   return {
     // Data
@@ -248,7 +344,7 @@ export const useAttendanceReports = () => {
     exportReport,
     
     // Utility functions
-    refreshData: () => generateMonthlyReport(month, year),
+    refreshData,
     clearError: () => setError(null)
   };
 };

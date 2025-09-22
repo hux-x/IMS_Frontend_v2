@@ -15,20 +15,24 @@ import CreateTask from "@/components/modals/createTask";
 import teamService from "@/apis/services/teamService";
 import { useParams } from "react-router-dom";
 import dashboardService from "@/apis/services/dashboardService";
+import useTasks from "@/hooks/useTask";
 
 const TeamDashboard = () => {
-  const [teamData, setTeamData] = useState(null); // no dummy data
+  const [teamData, setTeamData] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const { teamId } = useParams();
+  
+  // Use the hook methods with proper destructuring
+  const { handleDeleteTask, handleUpdateTask, addTask } = useTasks();
 
   useEffect(() => {
     const getTeamDashboard = async () => {
       try {
         const res = await dashboardService.getTeamDashboard(teamId);
-        console.log(res.data.team)
+        console.log(res.data.team);
         if (res?.data?.team) {
           setTeamData(res.data.team);
         }
@@ -49,18 +53,25 @@ const TeamDashboard = () => {
 
   const { team } = { team: teamData };
 
-  // Filter tasks
-  const filteredTasks = team.teamTasks.filter((task) => {
-    const matchesSearch =
-      task?.title?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || task.status === statusFilter;
-    const matchesPriority =
-      priorityFilter === "all" || task.priority === priorityFilter;
+  // Filter and sort tasks (newest first)
+  const filteredTasks = team.teamTasks
+    .filter((task) => {
+      const matchesSearch =
+        task?.title?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" || task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "all" || task.priority === priorityFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
+      return matchesSearch && matchesStatus && matchesPriority;
+    })
+    .sort((a, b) => {
+      // Sort by creation date in descending order (newest first)
+      const dateA = new Date(a.createdAt || a.updatedAt || 0);
+      const dateB = new Date(b.createdAt || b.updatedAt || 0);
+      return dateB - dateA;
+    });
 
   // Stats
   const totalTasks = team.teamTasks.length;
@@ -78,34 +89,106 @@ const TeamDashboard = () => {
     (member) => member.available
   ).length;
 
-  // Task Handlers
-  const handleTaskUpdate = (updatedTask) => {
-    console.log("Task updated:", updatedTask);
+  // Create wrapper functions that update local state after hook operations
+  const handleTaskUpdateWrapper = async (updatedTaskOrId, updatedTaskData = null) => {
+    try {
+      let taskId, updatedTask;
+      
+      // Handle both calling patterns: (updatedTask) or (taskId, updatedTask)
+      if (updatedTaskData === null) {
+        // Called with just (updatedTask)
+        updatedTask = updatedTaskOrId;
+        taskId = updatedTask._id;
+        console.log("TeamDashboard: Task update received (single param) - Task:", updatedTask);
+      } else {
+        // Called with (taskId, updatedTask)
+        taskId = updatedTaskOrId;
+        updatedTask = updatedTaskData;
+        console.log("TeamDashboard: Task update received (two params) - ID:", taskId, "Data:", updatedTask);
+      }
+      
+      if (!taskId) {
+        console.error("TeamDashboard: No task ID found in update request");
+        return;
+      }
+      
+      // Call the hook's update method
+      await handleUpdateTask(taskId, updatedTask);
+      
+      // Update local state to reflect the changes immediately
+      setTeamData((prevTeamData) => {
+        const updatedTasks = prevTeamData.teamTasks.map((task) =>
+          task._id === taskId ? { ...task, ...updatedTask } : task
+        );
+        
+        console.log("TeamDashboard: Local state updated for task ID:", taskId);
+        
+        return {
+          ...prevTeamData,
+          teamTasks: updatedTasks,
+        };
+      });
+    } catch (error) {
+      console.error("TeamDashboard: Error updating task:", error);
+      alert("Failed to update task. Please try again.");
+    }
   };
 
-  const handleTaskDelete = (taskId) => {
-    console.log("Task deleted:", taskId);
+  const handleTaskDeleteWrapper = async (taskId) => {
+    try {
+      console.log("TeamDashboard: Task delete requested for ID:", taskId);
+      
+      // Call the hook's delete method (same as Tasks.jsx)
+      await handleDeleteTask(taskId);
+      
+      // Update local state to remove the deleted task
+      setTeamData((prevTeamData) => {
+        const updatedTasks = prevTeamData.teamTasks.filter(
+          (task) => task._id !== taskId
+        );
+        
+        console.log("TeamDashboard: Task deleted from local state");
+        
+        return {
+          ...prevTeamData,
+          teamTasks: updatedTasks,
+        };
+      });
+    } catch (error) {
+      console.error("TeamDashboard: Error deleting task:", error);
+      alert("Failed to delete task. Please try again.");
+    }
   };
 
-  const handleCreateTask = (newTaskData) => {
-    const newTask = {
-      _id: `task${Date.now()}`,
-      title: newTaskData.description,
-      description: newTaskData.description,
-      status: newTaskData.status.toLowerCase().replace(" ", ""),
-      priority: newTaskData.priority.toLowerCase(),
-      assignedTo: { name: newTaskData.assignee },
-      deadline: newTaskData.deadline ? `${newTaskData.deadline}T00:00:00Z` : null,
-      todoChecklist: newTaskData.checklist
-        .filter((item) => item.trim() !== "")
-        .map((item) => ({ text: item, completed: false })),
-      attachments: newTaskData.files || [],
-    };
-
-    setTeamData((prev) => ({
-      ...prev,
-      teamTasks: [...prev.teamTasks, newTask],
-    }));
+  const handleCreateTask = async (newTaskData) => {
+    try {
+      console.log("TeamDashboard: Creating new task:", newTaskData);
+      
+      // Use the same pattern as the working Tasks.jsx component
+      await addTask(newTaskData);
+      
+      // Close the modal on success
+      setIsCreateTaskOpen(false);
+      
+      // Refresh team data to show the new task
+      const refreshTeamDashboard = async () => {
+        try {
+          const res = await dashboardService.getTeamDashboard(teamId);
+          if (res?.data?.team) {
+            setTeamData(res.data.team);
+            console.log("TeamDashboard: Team data refreshed after task creation");
+          }
+        } catch (error) {
+          console.error("TeamDashboard: Error refreshing team data:", error);
+        }
+      };
+      
+      await refreshTeamDashboard();
+      
+    } catch (error) {
+      console.error("TeamDashboard: Error creating task:", error);
+      alert(error.message || "Failed to create task. Please try again.");
+    }
   };
 
   return (
@@ -232,8 +315,8 @@ const TeamDashboard = () => {
                     <TaskCard
                       key={task._id}
                       task={task}
-                      onUpdate={handleTaskUpdate}
-                      onDelete={handleTaskDelete}
+                      onUpdate={handleTaskUpdateWrapper}
+                      onDelete={handleTaskDeleteWrapper}
                     />
                   ))
                 ) : (

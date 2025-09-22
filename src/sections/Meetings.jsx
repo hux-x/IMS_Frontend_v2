@@ -179,7 +179,7 @@ const MeetingDashboard = () => {
               <button
                 onClick={() => setShowCreateModal(true)}
                 disabled={loading || actionLoading}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-blue-400 flex items-center gap-2 font-medium"
+                className="bg-[rgb(139,184,134)] text-white px-6 py-3 rounded-lg hover:bg-[rgb(42, 187, 26)] disabled:bg-blue-400 flex items-center gap-2 font-medium"
               >
                 <Plus size={20} />
                 New Meeting

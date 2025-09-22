@@ -6,41 +6,7 @@ export const mockUsers = [
     avatar: 'JD',
     status: 'online'
   },
-  {
-    id: 'user-2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    avatar: 'JS',
-    status: 'online'
-  },
-  {
-    id: 'user-3',
-    name: 'Mike Johnson',
-    email: 'mike@example.com',
-    avatar: 'MJ',
-    status: 'away'
-  },
-  {
-    id: 'user-4',
-    name: 'Sarah Wilson',
-    email: 'sarah@example.com',
-    avatar: 'SW',
-    status: 'online'
-  },
-  {
-    id: 'user-5',
-    name: 'David Brown',
-    email: 'david@example.com',
-    avatar: 'DB',
-    status: 'offline'
-  },
-   {
-    id: 'user-6',
-    name: 'John Doe',
-    email: 'john@example.com',
-    avatar: 'JD',
-    status: 'online'
-  },
+
   {
     id: 'user-7',
     name: 'Jane Smith',

@@ -8,13 +8,14 @@ import { AuthContext } from '@/context/authContext';
 const Header = ({ onMenuClick = () => {} }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const { userId, userRole } = useContext(AuthContext); // Assuming userId or userRole can help fetch user data
+  const {name,email, logout } = useContext(AuthContext); // Assuming userId or userRole can help fetch user data
 
   // Dummy user data (replace with dynamic fetch if needed)
   const user = {
-    name: userRole === 'admin' ? 'Admin' : 'Employee', // Placeholder, update with actual user data
-    email: 'user@example.com', // Placeholder, update with actual user data
+   name, // Placeholder, update with actual user data
+    email, // Placeholder, update with actual user data
   };
+  console.log(user.name,user.email)
 
 
   return (
@@ -31,15 +32,7 @@ const Header = ({ onMenuClick = () => {} }) => {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Search */}
-            <div className="relative hidden md:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#acc6aa] focus:border-transparent"
-              />
-            </div>
+        
           </div>
 
           {/* Right side */}
@@ -60,7 +53,7 @@ const Header = ({ onMenuClick = () => {} }) => {
                 </span>
               </button>
 
-              {showProfile && <NavProfile user={user} />}
+              {showProfile && <NavProfile logout={logout} user={user} />}
             </div>
           </div>
         </div>

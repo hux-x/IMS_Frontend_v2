@@ -1,6 +1,6 @@
 import { User } from "lucide-react";
 import { motion } from "framer-motion";
-const NavProfile = ({ user }) => {
+const NavProfile = ({ user,logout }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -16,7 +16,7 @@ const NavProfile = ({ user }) => {
           <User className="w-4 h-4" />
           <span>Profile</span>
         </button>
-        <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2">
+        <button onClick={logout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2">
           <span>Logout</span>
         </button>
       </div>

@@ -39,16 +39,21 @@ const useTasks = () => {
     }
   };
 
-  const handleUpdateTask = useCallback(async (taskId, updatedTask) => {
-    try {
-      const res = await taskService.updateTask(updatedTask._id, updatedTask);
-      setTasks(prev => 
-        prev.map(task => task._id === taskId ? res.data.task : task)
-      );
-    } catch (err) {
-      console.log(err);
-    }
-  }, [])
+const handleUpdateTask = useCallback(async (taskId, updatedTask) => {
+  try {
+    const res = await taskService.updateTask(taskId, updatedTask);
+    const newTask = res.data.task;
+
+    setTasks(prev =>
+      prev.map(task =>
+        task._id === taskId ? { ...newTask } : task // force new object
+      )
+    );
+  } catch (err) {
+    console.log(err);
+  }
+}, []);
+
 
   const handleDeleteTask = useCallback(async (taskId) => {
     try {

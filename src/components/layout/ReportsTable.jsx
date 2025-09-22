@@ -104,8 +104,7 @@ const ReportsTable = ({ data = [], loading = false, selectedEmployee, employees 
     { key: 'checkInTime', label: 'Check In', sortable: true },
     { key: 'checkOutTime', label: 'Check Out', sortable: true },
     { key: 'workingHours', label: 'Working Hours', sortable: true },
-    { key: 'lateMinutes', label: 'Late (min)', sortable: true },
-    { key: 'notes', label: 'Notes', sortable: false }
+  
   ] : [
     { key: 'employee.name', label: 'Employee', sortable: true },
     { key: 'employee.email', label: 'Email', sortable: true },

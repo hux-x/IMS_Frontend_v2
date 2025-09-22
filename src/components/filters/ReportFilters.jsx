@@ -33,7 +33,7 @@ const ReportFilters = ({
             disabled={loading}
             className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
           >
-            <option value="">All Employees</option>
+            <option value="">None</option>
             {employees.map(employee => (
               <option key={employee._id} value={employee._id}>
                 {employee.name} ({employee.position || 'No Position'})
