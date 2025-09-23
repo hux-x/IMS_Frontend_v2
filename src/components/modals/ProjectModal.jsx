@@ -66,7 +66,7 @@ export default memo(function ProjectModal({
       fileUrl = URL.createObjectURL(file);
     } else {
       const filePath = file.path || file;
-      fileUrl = filePath.startsWith('/uploads') ? `http://localhost:5000${filePath}` : filePath;
+      fileUrl = filePath.startsWith('/uploads') ? `http://35.173.56.214/${filePath}` : filePath;
     }
 
     switch (extension) {

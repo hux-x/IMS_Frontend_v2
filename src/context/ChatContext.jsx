@@ -38,7 +38,7 @@ const initialState = {
   messageStatus: {} // { tempId: { status: 'sending'|'sent'|'failed' } }
 };
 
-// Reducer
+// Reducer (same as before)
 const chatReducer = (state, action) => {
   switch (action.type) {
     case CHAT_ACTIONS.SET_SOCKET:
@@ -156,20 +156,52 @@ export const ChatProvider = ({ children }) => {
   const { isAuthenticated } = useContext(AuthContext);
   const typingTimeoutRef = useRef({});
   const isInitializedRef = useRef(false);
+  const reconnectTimeoutRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+
+  // Get token helper function
+  const getAuthToken = () => {
+    // Try localStorage first
+    let token = localStorage.getItem("auth_token") 
+    
+    // If not in localStorage, try axios defaults
+
+      console.log(token, "AUTH TOKENNNNNNNNNNNNNNNNNNNNNNNNN")
+    
+    
+    return token;
+  };
 
   // Initialize Socket Connection
   const initializeSocket = async () => {
     try {
-      // Get auth token from your auth system
-      const token = localStorage.getItem('auth_token') || client.defaults.headers.common['Authorization']?.replace('Bearer ', '');
+      const token = getAuthToken();
       
       if (!token) {
         dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: 'Authentication required' });
         return;
       }
 
-      const socket = io('35.173.56.214:5000', {
-        auth: { token }
+      console.log('🔌 Initializing socket connection...');
+
+      // Cleanup existing socket
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+
+      // Create new socket connection
+      const socket = io('http://35.173.56.214', { // Changed from ws:// to http://
+        auth: { token },
+        timeout: 20000,
+        transports: ["websocket", "polling"],
+        forceNew: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        maxReconnectionAttempts: 5,
+        autoConnect: true
       });
 
       socketRef.current = socket;
@@ -177,28 +209,59 @@ export const ChatProvider = ({ children }) => {
 
       // Socket event listeners
       socket.on('connect', () => {
-        console.log('Connected to server');
+        console.log('✅ Connected to server with socket ID:', socket.id);
         dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: null });
+        reconnectAttempts.current = 0;
+
+        // Clear any pending reconnect timeout
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
       });
 
-      socket.on('disconnect', () => {
-        console.log('Disconnected from server');
+      socket.on('connect_error', (error) => {
+        console.error('❌ Socket connection error:', error.message);
+        dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: `Connection failed: ${error.message}` });
+        
+        // Attempt reconnection with exponential backoff
+        if (reconnectAttempts.current < maxReconnectAttempts) {
+          const delay = Math.pow(2, reconnectAttempts.current) * 1000;
+          console.log(`🔄 Retrying connection in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            reconnectAttempts.current++;
+            initializeSocket();
+          }, delay);
+        }
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('🔌 Disconnected from server. Reason:', reason);
+        
+        if (reason === 'io server disconnect') {
+          // Server disconnected the socket, manual reconnection needed
+          console.log('🔄 Server disconnected socket, attempting to reconnect...');
+          setTimeout(() => initializeSocket(), 2000);
+        }
       });
 
       socket.on('registered', (data) => {
-        console.log('User registered:', data);
+        console.log('👤 User registered:', data);
       });
 
       socket.on('error', (error) => {
-        console.error('Socket error:', error);
-        dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: error.message });
+        console.error('🚨 Socket error:', error);
+        dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: error.message || 'Socket error occurred' });
       });
 
       socket.on('online_users', (users) => {
+        console.log('👥 Online users updated:', users);
         dispatch({ type: CHAT_ACTIONS.SET_ONLINE_USERS, payload: users });
       });
 
       socket.on('messages_loaded', (data) => {
+        console.log('📨 Messages loaded for chat:', data.chatId);
         dispatch({ 
           type: CHAT_ACTIONS.SET_MESSAGES, 
           payload: {
@@ -212,6 +275,7 @@ export const ChatProvider = ({ children }) => {
       });
 
       socket.on('new_message', (data) => {
+        console.log('💬 New message received:', data.message);
         dispatch({ 
           type: CHAT_ACTIONS.ADD_MESSAGE, 
           payload: { 
@@ -232,6 +296,7 @@ export const ChatProvider = ({ children }) => {
       });
 
       socket.on('message_sent', (data) => {
+        console.log('✅ Message sent confirmation:', data);
         dispatch({
           type: CHAT_ACTIONS.UPDATE_MESSAGE_STATUS,
           payload: {
@@ -252,14 +317,30 @@ export const ChatProvider = ({ children }) => {
         });
       });
 
+      // Test connection after a short delay
+      setTimeout(() => {
+        if (socket.connected) {
+          console.log('🔗 Socket connection established successfully');
+        } else {
+          console.warn('⚠️ Socket connection not established within timeout');
+        }
+      }, 3000);
+
     } catch (error) {
-      console.error('Socket initialization error:', error);
+      console.error('💥 Socket initialization error:', error);
       dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: 'Connection failed' });
     }
   };
 
   // Cleanup socket connection
   const cleanupSocket = () => {
+    console.log('🧹 Cleaning up socket connection...');
+    
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
@@ -275,6 +356,7 @@ export const ChatProvider = ({ children }) => {
     // Reset state
     dispatch({ type: CHAT_ACTIONS.RESET_STATE });
     isInitializedRef.current = false;
+    reconnectAttempts.current = 0;
   };
 
   // Load User and Chats
@@ -282,8 +364,7 @@ export const ChatProvider = ({ children }) => {
     try {
       dispatch({ type: CHAT_ACTIONS.SET_LOADING, payload: true });
       
-      // Get user ID from token (decode JWT to get user info)
-      const token = localStorage.getItem('auth_token') || client.defaults.headers.common['Authorization']?.replace('Bearer ', '');
+      const token = getAuthToken();
       
       if (token) {
         try {
@@ -304,9 +385,21 @@ export const ChatProvider = ({ children }) => {
           
           dispatch({ type: CHAT_ACTIONS.SET_USER, payload: user });
 
-          // Register socket with user ID
-          if (socketRef.current) {
+          // Register socket with user ID after socket is connected
+          if (socketRef.current && socketRef.current.connected) {
+            console.log('📝 Registering user with socket:', user._id);
             socketRef.current.emit('register', user._id || user.id);
+          } else {
+            // Wait for socket to connect then register
+            const waitForConnection = () => {
+              if (socketRef.current && socketRef.current.connected) {
+                console.log('📝 Registering user with socket (after connection):', user._id);
+                socketRef.current.emit('register', user._id || user.id);
+              } else {
+                setTimeout(waitForConnection, 1000);
+              }
+            };
+            waitForConnection();
           }
         } catch (tokenError) {
           console.error('Error decoding token:', tokenError);
@@ -341,13 +434,16 @@ export const ChatProvider = ({ children }) => {
 
   // Load Messages for a Chat
   const loadMessages = (chatId, cursor = null, direction = 'before') => {
-    if (socketRef.current) {
+    if (socketRef.current && socketRef.current.connected) {
+      console.log('📨 Loading messages for chat:', chatId);
       socketRef.current.emit('load_messages', {
         chatId,
         cursor,
         limit: 20,
         direction
       });
+    } else {
+      console.warn('⚠️ Cannot load messages: Socket not connected');
     }
   };
 
@@ -355,7 +451,9 @@ export const ChatProvider = ({ children }) => {
   const sendMessage = (chatId, content, messageType = 'text', replyTo = null) => {
     const tempId = `temp_${Date.now()}_${Math.random()}`;
     
-    if (socketRef.current) {
+    if (socketRef.current && socketRef.current.connected) {
+      console.log('💬 Sending message to chat:', chatId);
+      
       // Update status to sending
       dispatch({
         type: CHAT_ACTIONS.UPDATE_MESSAGE_STATUS,
@@ -369,6 +467,12 @@ export const ChatProvider = ({ children }) => {
         messageType,
         replyTo,
         tempId
+      });
+    } else {
+      console.warn('⚠️ Cannot send message: Socket not connected');
+      dispatch({
+        type: CHAT_ACTIONS.UPDATE_MESSAGE_STATUS,
+        payload: { tempId, status: 'failed' }
       });
     }
     
@@ -411,11 +515,13 @@ export const ChatProvider = ({ children }) => {
   // Effect to handle authentication state changes
   useEffect(() => {
     if (isAuthenticated && !isInitializedRef.current) {
+      console.log('🔐 User authenticated, initializing chat system...');
       // User is authenticated and chat hasn't been initialized yet
       initializeSocket();
       loadUserData();
       isInitializedRef.current = true;
     } else if (!isAuthenticated && isInitializedRef.current) {
+      console.log('🔓 User no longer authenticated, cleaning up...');
       // User is no longer authenticated, cleanup
       cleanupSocket();
     }
