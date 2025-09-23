@@ -130,7 +130,7 @@ const Dashboard = () => {
     <div className="space-y-6">
       <SectionHeader
         title={`Welcome back, ${employeeData.name || 'User'}! 👋`}
-        subtitle={`Here's what's happening with your work today. Status: ${employeeData.status || 'N/A'}`}
+        subtitle={`Here's what's happening with your work today.`}
       />
 
       {/* Enhanced Stat Cards */}

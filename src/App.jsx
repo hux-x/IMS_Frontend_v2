@@ -64,10 +64,10 @@ function App() {
           }
         >
           {/* Default redirect */}
-          <Route index element={<Navigate to="/dashboard" />} />
+
 
           {/* Common routes */}
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route index path="dashboard" element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="chat" element={<Chats />} />
           <Route path="attendance" element={<Attendance />} />

@@ -168,7 +168,7 @@ export const ChatProvider = ({ children }) => {
         return;
       }
 
-      const socket = io('http://localhost:5000', {
+      const socket = io('35.173.56.214:5000', {
         auth: { token }
       });
 

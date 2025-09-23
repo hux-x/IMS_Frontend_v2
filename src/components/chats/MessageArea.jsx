@@ -18,18 +18,7 @@ const MessagesArea = ({
         
         // Get sender info from the message object
         const sender = message.sender || {};
-        
-        // Debug log in development
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Message rendering:', {
-            messageId: message._id,
-            senderId: sender._id || sender.id,
-            currentUserId: currentUserId,
-            userFromContext: user?._id || user?.id,
-            isOwn,
-            senderName: sender.name
-          });
-        }
+    
         
         return (
           <MessageBubble
@@ -47,4 +36,4 @@ const MessagesArea = ({
   );
 };
 
-export default MessagesArea;
+export default React.memo(MessagesArea)
