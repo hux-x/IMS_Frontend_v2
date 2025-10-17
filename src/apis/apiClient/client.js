@@ -16,8 +16,7 @@ client.interceptors.request.use(function (config) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   
-  // If the data is FormData, remove Content-Type header to let browser set it
-  // with proper boundary for multipart/form-data
+  
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
