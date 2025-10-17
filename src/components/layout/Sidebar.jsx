@@ -23,9 +23,9 @@ const Sidebar = ({ isOpen }) => {
   // Define menu items with role-based access
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin', 'employee'] },
-    { name: 'Tasks', icon: CheckSquare, path: '/tasks', roles: ['admin', 'employee'] },
+    { name: 'Tasks', icon: CheckSquare, path: '/tasks', roles: ['admin'] },
     { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
-    { name: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin', 'employee'] },
+    { name: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin'] },
     { name: 'Reports', icon: BarChart3, path: '/reports', roles: ['admin'] },
     { name: 'Teams', icon: Users, path: '/teams', roles: ['admin'] },
     { name: 'Employees', icon: UserCircle, path: '/employees', roles: ['admin'] },
