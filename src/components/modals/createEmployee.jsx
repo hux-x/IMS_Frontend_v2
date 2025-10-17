@@ -1,18 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   FaPlus, 
   FaUserFriends, 
   FaBullhorn, 
-  FaChevronRight
+  FaChevronRight,
+  FaEdit
 } from "react-icons/fa";
 import InputField from "@/components/custom/InputField";
 import Dropdown from "@/components/custom/Dropdown";
 
-const CreateEmployeeModal = ({ 
-  onAddEmployee, 
-  isAddEmployeeModalOpen, 
-  setIsAddEmployeeModalOpen,
-  loading = false 
+const EmployeeModal = ({ 
+  onAddEmployee,
+  onUpdateEmployee,
+  isModalOpen, 
+  setIsModalOpen,
+  loading = false,
+  mode = "add", // "add" or "edit"
+  employeeData = null // Employee data for edit mode
 }) => {
   const [formData, setFormData] = useState({
     role: "",
@@ -21,8 +25,8 @@ const CreateEmployeeModal = ({
     email: "",
     password: "",
     age: "",
-    status: "Active", // Default status
-    username:""
+    status: "Active",
+    username: ""
   });
   
   const [errors, setErrors] = useState({});
@@ -40,6 +44,35 @@ const CreateEmployeeModal = ({
   ];
   const statusOptions = ["active", "Non Active"];
 
+  // Populate form data when in edit mode
+  useEffect(() => {
+    if (mode === "edit" && employeeData) {
+      setFormData({
+        role: employeeData.role || "",
+        name: employeeData.name || "",
+        department: employeeData.department || employeeData.position || "",
+        email: employeeData.email || "",
+        password: "", // Don't populate password for security
+        age: employeeData.age?.toString() || "",
+        status: employeeData.status || "Active",
+        username: employeeData.username || ""
+      });
+    } else if (mode === "add") {
+      // Reset form for add mode
+      setFormData({
+        role: "",
+        name: "",
+        department: "",
+        email: "",
+        password: "",
+        age: "",
+        status: "Active",
+        username: ""
+      });
+    }
+    setErrors({});
+  }, [mode, employeeData, isModalOpen]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -47,24 +80,32 @@ const CreateEmployeeModal = ({
     setIsSubmitting(true);
     
     try {
-      // Generate username from name if not provided
       const payload = {
         username_: formData.username,
         email: formData.email,
         password: formData.password,
         role: formData.role.toLowerCase(),
         position: formData.role.toLowerCase(),
-      
-        department: formData.department, // This will be mapped to position in the parent
+        department: formData.department,
         status: formData.status,
         name: formData.name,
         age: parseInt(formData.age) || 25,
         username: formData.username
       };
-      console.log(payload)
-      const {name, username_, age, role, position, password,email,department,status, username} = payload;
 
-      await onAddEmployee({name, username: username_, age, role, position, password,email,department,status, username});
+      const { name, username_, age, role, position, password, email, department, status, username } = payload;
+
+      if (mode === "edit") {
+        // For update, create update payload (exclude password if empty)
+        const updatePayload = { name, username: username_, age, role, position, email, department, status, username };
+        if (password.trim()) {
+          updatePayload.password = password;
+        }
+        await onUpdateEmployee(employeeData._id, updatePayload);
+      } else {
+        // For add, include password (required)
+        await onAddEmployee({ name, username: username_, age, role, position, password, email, department, status, username });
+      }
       
       // Reset form after successful submission
       setFormData({
@@ -74,8 +115,8 @@ const CreateEmployeeModal = ({
         email: "",
         password: "",
         age: "",
-        contact: "",
-        status: "Active"
+        status: "Active",
+        username: ""
       });
       setErrors({});
       
@@ -97,11 +138,14 @@ const CreateEmployeeModal = ({
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
     }
-    if (!formData.password?.trim()) {
+    
+    // Password validation - required for add mode, optional for edit mode
+    if (mode === "add" && !formData.password?.trim()) {
       newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
+    } else if (formData.password?.trim() && formData.password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
+    
     if (formData.age && (isNaN(formData.age) || parseInt(formData.age) < 18 || parseInt(formData.age) > 100)) {
       newErrors.age = "Age must be between 18 and 100";
     }
@@ -137,10 +181,15 @@ const CreateEmployeeModal = ({
 
   const handleClose = () => {
     if (isSubmitting) return; // Prevent closing while submitting
-    setIsAddEmployeeModalOpen(false);
+    setIsModalOpen(false);
   };
 
-  if (!isAddEmployeeModalOpen) return null;
+  if (!isModalOpen) return null;
+
+  const isEditMode = mode === "edit";
+  const modalTitle = isEditMode ? "Update Employee" : "Create Employee";
+  const submitButtonText = isEditMode ? "Update Employee" : "Add Employee";
+  const submitButtonIcon = isEditMode ? <FaEdit className="w-4 h-4" /> : <FaPlus className="w-4 h-4" />;
 
   return (
     <div className="p-6 bg-white rounded-xl shadow-lg w-[680px]">
@@ -148,7 +197,7 @@ const CreateEmployeeModal = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <FaUserFriends className="w-5 h-5 text-gray-600" />
-          <h2 className="text-xl font-semibold text-black">Create Employee</h2>
+          <h2 className="text-xl font-semibold text-black">{modalTitle}</h2>
         </div>
         <button 
           onClick={handleClose}
@@ -190,7 +239,9 @@ const CreateEmployeeModal = ({
               <p className="text-red-500 text-xs mt-1">{errors.name}</p>
             )}
           </div>
-           <div>
+          
+          {/* Username */}
+          <div>
             <InputField 
               label="Username" 
               placeholder="Create a username (unique)" 
@@ -199,8 +250,8 @@ const CreateEmployeeModal = ({
               onChange={handleChange}
               required
             />
-            {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+            {errors.username && (
+              <p className="text-red-500 text-xs mt-1">{errors.username}</p>
             )}
           </div>
           
@@ -248,13 +299,13 @@ const CreateEmployeeModal = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <InputField 
-                label="Password" 
-                placeholder="Enter password (min 6 characters)" 
+                label={isEditMode ? "Password (leave blank to keep current)" : "Password"} 
+                placeholder={isEditMode ? "Enter new password (optional)" : "Enter password (min 6 characters)"} 
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 type="password"
-                required
+                required={!isEditMode}
               />
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -286,8 +337,11 @@ const CreateEmployeeModal = ({
             disabled={isSubmitting || loading}
             className="flex items-center gap-2 px-5 py-3 rounded-xl bg-red-700 text-white font-semibold text-xs hover:bg-red-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaPlus className="w-4 h-4" />
-            {isSubmitting ? 'Adding Employee...' : 'Add Employee'}
+            {submitButtonIcon}
+            {isSubmitting ? 
+              (isEditMode ? 'Updating Employee...' : 'Adding Employee...') : 
+              submitButtonText
+            }
           </button>
         </div>
       </form>
@@ -295,4 +349,4 @@ const CreateEmployeeModal = ({
   );
 };
 
-export default CreateEmployeeModal;
+export default EmployeeModal;

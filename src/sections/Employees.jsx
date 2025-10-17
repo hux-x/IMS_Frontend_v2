@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import CreateEmployeeModal from '@/components/modals/createEmployee';
+import EmployeeModal from '@/components/modals/createEmployee'; // Updated import
 import EmployeeTable from '@/components/layout/ReuableTable';
 import { FaPlus, FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import useAuth from '@/hooks/useAuth';
@@ -7,7 +7,9 @@ import useAuth from '@/hooks/useAuth';
 export default function EmployeeList() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
   
   const columns = ["EMPLOYEE NAME", "DEPARTMENT", "ROLE", "STATUS"];
   const itemsPerPage = 13;
@@ -17,7 +19,8 @@ export default function EmployeeList() {
     loading, 
     error, 
     getEmployees, 
-    addEmployee 
+    addEmployee,
+    updateEmployee 
   } = useAuth();
 
   // Load employees on component mount
@@ -42,13 +45,47 @@ export default function EmployeeList() {
       };
 
       await addEmployee(employeePayload);
-      setIsAddEmployeeModalOpen(false);
+      setIsEmployeeModalOpen(false);
       
       // Show success message (you can replace this with your preferred notification system)
       alert('Employee added successfully!');
     } catch (err) {
       console.error('Error adding employee:', err);
       alert('Failed to add employee. Please try again.');
+    }
+  };
+
+  const handleUpdateEmployee = async (employeeId, updateData) => {
+    try {
+      // Map the form data to match the API expected format
+      const updatePayload = {
+        name: updateData.name,
+        username: updateData.username,
+        age: updateData.age || 25,
+        role: updateData.role.toLowerCase(),
+        position: updateData.department, // Map department to position
+        email: updateData.email,
+        department: updateData.department,
+        contact: updateData.contact || '',
+        team: updateData.team || null,
+        status: updateData.status
+      };
+
+      // Only include password if it's provided
+      if (updateData.password && updateData.password.trim()) {
+        updatePayload.password = updateData.password;
+      }
+
+      await updateEmployee(employeeId, updatePayload);
+      setIsEmployeeModalOpen(false);
+      setSelectedEmployee(null);
+      setModalMode('add');
+      
+      // Show success message
+      alert('Employee updated successfully!');
+    } catch (err) {
+      console.error('Error updating employee:', err);
+      alert('Failed to update employee. Please try again.');
     }
   };
 
@@ -67,17 +104,31 @@ export default function EmployeeList() {
 
   // Open add employee modal
   const openAddEmployeeModal = () => {
-    setIsAddEmployeeModalOpen(true);
+    setModalMode('add');
+    setSelectedEmployee(null);
+    setIsEmployeeModalOpen(true);
   };
 
-  // Close modals
-  const closeAddEmployeeModal = () => {
-    setIsAddEmployeeModalOpen(false);
+  // Open edit employee modal
+  const openEditEmployeeModal = (employee) => {
+    setModalMode('edit');
+    setSelectedEmployee(employee);
+    setIsEmployeeModalOpen(true);
   };
 
-  const handleEditEmployee = () => {
-    // Implement edit functionality later
-    console.log('Edit employee clicked');
+  // Close modal
+  const closeEmployeeModal = () => {
+    setIsEmployeeModalOpen(false);
+    setSelectedEmployee(null);
+    setModalMode('add');
+  };
+
+  const handleEditEmployee = (employeeData) => {
+    // Find the full employee data from the employees array
+    const fullEmployeeData = employees.find(emp => emp._id === employeeData.id);
+    if (fullEmployeeData) {
+      openEditEmployeeModal(fullEmployeeData);
+    }
   };
 
   // Transform employee data to match table expected format
@@ -132,7 +183,7 @@ export default function EmployeeList() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button 
-  className="flex items-center justify-center gap-2 w-[174px] h-[44px] px-[11px] bg-[rgb(139,184,134)] rounded-[12px] hover:bg-[#B81E1E] transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-2 w-[174px] h-[44px] px-[11px] bg-[rgb(139,184,134)] rounded-[12px] hover:bg-[#B81E1E] transition-colors disabled:opacity-50"
             onClick={openAddEmployeeModal}
             disabled={loading}
           >
@@ -180,20 +231,23 @@ export default function EmployeeList() {
         editItem={handleEditEmployee}
       />
 
-      {/* Add Employee Modal */}
-      {isAddEmployeeModalOpen && (
+      {/* Employee Modal (Add/Edit) */}
+      {isEmployeeModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
             className="absolute inset-0"
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
-            onClick={closeAddEmployeeModal}
+            onClick={closeEmployeeModal}
           />
           <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-auto transform transition-all">
-            <CreateEmployeeModal 
-              onAddEmployee={handleAddEmployee} 
-              isAddEmployeeModalOpen={isAddEmployeeModalOpen}
-              setIsAddEmployeeModalOpen={setIsAddEmployeeModalOpen}
+            <EmployeeModal 
+              onAddEmployee={handleAddEmployee}
+              onUpdateEmployee={handleUpdateEmployee}
+              isModalOpen={isEmployeeModalOpen}
+              setIsModalOpen={setIsEmployeeModalOpen}
               loading={loading}
+              mode={modalMode}
+              employeeData={selectedEmployee}
             />
           </div>
         </div>

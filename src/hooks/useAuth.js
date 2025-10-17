@@ -70,7 +70,7 @@ const useAuth = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await authService.updateEmployee(id, updates);
+      const response = await authService.updateEmployeeInfo(id, updates);
       
       // Update the employee in the state
       setEmployees((prev) =>

@@ -9,15 +9,47 @@ export const login = async (username, password) => {
   return await client.post("/employees/login", { username, password });
 };
 
-export const updateEmployeeInfo = async (id, name = null, username = null, age = null, role = null, position = null) => {
+// Updated updateEmployeeInfo function with all necessary fields
+export const updateEmployeeInfo = async (
+  id, 
+  {
+    name = null,
+    username = null,
+    email = null,
+    age = null,
+    role = null,
+    position = null,
+    department = null,
+    status = null,
+    password = null,
+    contact = null,
+    team = null,
+    available = null,
+    isOnline = null
+  } = {}
+) => {
   const body = {};
-  if (name !== null) body.name = name;
-  if (username !== null) body.username = username;
-  if (age !== null) body.age = age;
-  if (role !== null) body.role = role;
-  if (position !== null) body.position = position;
-  return await client.put(`/employees/update/${id}`, body); // Fixed URL to match backend route
+  
+  // Only include fields that are not null/undefined
+  if (name !== null && name !== undefined) body.name = name;
+  if (username !== null && username !== undefined) body.username = username;
+  if (email !== null && email !== undefined) body.email = email;
+  if (age !== null && age !== undefined) body.age = age;
+  if (role !== null && role !== undefined) body.role = role;
+  if (position !== null && position !== undefined) body.position = position;
+  if (department !== null && department !== undefined) body.department = department;
+  if (status !== null && status !== undefined) body.status = status;
+  if (password !== null && password !== undefined && password.trim() !== '') {
+    body.password = password.trim(); // Only include non-empty passwords
+  }
+  if (contact !== null && contact !== undefined) body.contact = contact;
+  if (team !== null && team !== undefined) body.team = team;
+  if (available !== null && available !== undefined) body.available = available;
+  if (isOnline !== null && isOnline !== undefined) body.isOnline = isOnline;
+
+  return await client.put(`/employees/update/${id}`, body);
 };
+
 
 export const getEmployees = async (limit, offset) => {
   return await client.get(`/employees/all?limit=${limit}&offset=${offset}`); // Adjusted to use /all

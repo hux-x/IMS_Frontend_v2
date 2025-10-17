@@ -192,7 +192,7 @@ export const ChatProvider = ({ children }) => {
       }
 
       // Create new socket connection
-      const socket = io('http://35.173.56.214', { // Changed from ws:// to http://
+      const socket = io('http://localhost:5000', { // Changed from ws:// to http://
         auth: { token },
         timeout: 20000,
         transports: ["websocket", "polling"],

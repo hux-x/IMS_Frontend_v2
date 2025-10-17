@@ -3,7 +3,7 @@ import axios from "axios";
 import { getToken } from "@/apis/localStorage/tokenStorage";
 
 const client = axios.create({
-  baseURL: "http://35.173.56.214/api",
+  baseURL: "http://localhost:5000/api",
   timeout: 30000, // Increased timeout for file uploads
   headers: {
     "Content-Type": "application/json",
