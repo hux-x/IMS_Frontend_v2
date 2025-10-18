@@ -22,13 +22,18 @@ import TaskCard from "@/components/cards/TaskCard";
 import TeamCard from "@/components/cards/TeamCard";
 import useDashboard from "@/hooks/useDashboard";
 import useTasks from "@/hooks/useTask";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import MeetingCard from "@/components/cards/MeetingCard";
+import { AuthContext } from "@/context/authContext";
 
 const Dashboard = () => {
   const { dashboard, loading, error } = useDashboard();
   const { handleUpdateTask, handleDeleteTask } = useTasks();
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const { userRole } = useContext(AuthContext);
+
+  // Check if user is admin or teamLead
+  const isAdminOrLead = userRole === 'admin' || userRole === 'teamLead';
 
   // Enhanced update handler with page refresh
   const handleTaskUpdate = async (taskId, updateData) => {
@@ -85,7 +90,7 @@ const Dashboard = () => {
   const meetings = dashboard?.meetings || [];
   const meetingCount = dashboard?.meetingCount || 0;
 
-  console.log(dashboard)
+  console.log(dashboard);
 
   const stats = [
     {
@@ -166,7 +171,6 @@ const Dashboard = () => {
             <p className="font-medium text-gray-700">Total Assigned Tasks</p>
             <p className="text-2xl font-bold text-orange-600">{assignedTasks.length}</p>
           </div>
-        
         </div>
       </div>
 
@@ -196,32 +200,34 @@ const Dashboard = () => {
         )}
       </section>
 
-      {/* Assigned Tasks Section */}
-      <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-          <Briefcase className="h-6 w-6 text-blue-600" />
-          Assigned Tasks ({assignedTasks.length} total)
-        </h2>
-        {assignedTasks.length > 0 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {assignedTasks.map((task) => (
-              <TaskCard 
-                key={task._id} 
-                task={task} 
-                onDelete={handleTaskDelete} 
-                onUpdate={handleTaskUpdate}
-                showPriority={true}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <Briefcase className="mx-auto h-16 w-16 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg">No tasks assigned yet.</p>
-            <p className="text-sm text-gray-400 mt-2">Check back later for new assignments.</p>
-          </div>
-        )}
-      </section>
+      {/* Assigned Tasks Section - Only visible to admin/teamLead */}
+      {isAdminOrLead && (
+        <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
+            <Briefcase className="h-6 w-6 text-blue-600" />
+            Assigned Tasks ({assignedTasks.length} total)
+          </h2>
+          {assignedTasks.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {assignedTasks.map((task) => (
+                <TaskCard 
+                  key={task._id} 
+                  task={task} 
+                  onDelete={handleTaskDelete} 
+                  onUpdate={handleTaskUpdate}
+                  showPriority={true}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Briefcase className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+              <p className="text-gray-500 text-lg">No tasks assigned yet.</p>
+              <p className="text-sm text-gray-400 mt-2">Check back later for new assignments.</p>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Meetings Section */}
       <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -331,8 +337,6 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-
-           
 
             <div className="flex items-center gap-3">
               <div className="h-5 w-5 text-gray-400">#</div>
