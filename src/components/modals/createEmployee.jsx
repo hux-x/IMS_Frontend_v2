@@ -16,7 +16,8 @@ const EmployeeModal = ({
   setIsModalOpen,
   loading = false,
   mode = "add", // "add" or "edit"
-  employeeData = null // Employee data for edit mode
+  employeeData = null, // Employee data for edit mode
+  availableRoles = [] // Roles provided by API
 }) => {
   const [formData, setFormData] = useState({
     role: "",
@@ -25,14 +26,18 @@ const EmployeeModal = ({
     email: "",
     password: "",
     age: "",
-    status: "Active",
+    status: "active",
     username: ""
   });
   
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const roles = ["employee", "intern", "admin", "executive"];
+  // Use roles from API, with fallback to default roles
+  const roles = availableRoles && availableRoles.length > 0 
+    ? availableRoles 
+    : ["employee", "intern", "admin", "executive"];
+  
   const departments = [
     "Technology",
     "Human Resources", 
@@ -42,7 +47,8 @@ const EmployeeModal = ({
     "Sales",
     "Customer Support"
   ];
-  const statusOptions = ["active", "Non Active"];
+  
+  const statusOptions = ["active", "inactive"];
 
   // Populate form data when in edit mode
   useEffect(() => {
@@ -54,7 +60,7 @@ const EmployeeModal = ({
         email: employeeData.email || "",
         password: "", // Don't populate password for security
         age: employeeData.age?.toString() || "",
-        status: employeeData.status || "Active",
+        status: employeeData.status?.toLowerCase() || "active",
         username: employeeData.username || ""
       });
     } else if (mode === "add") {
@@ -66,7 +72,7 @@ const EmployeeModal = ({
         email: "",
         password: "",
         age: "",
-        status: "Active",
+        status: "active",
         username: ""
       });
     }
@@ -81,30 +87,27 @@ const EmployeeModal = ({
     
     try {
       const payload = {
-        username_: formData.username,
+        username: formData.username,
         email: formData.email,
         password: formData.password,
         role: formData.role.toLowerCase(),
         position: formData.role.toLowerCase(),
         department: formData.department,
-        status: formData.status,
+        status: formData.status.toLowerCase(),
         name: formData.name,
-        age: parseInt(formData.age) || 25,
-        username: formData.username
+        age: parseInt(formData.age) || 25
       };
 
-      const { name, username_, age, role, position, password, email, department, status, username } = payload;
-
       if (mode === "edit") {
-        // For update, create update payload (exclude password if empty)
-        const updatePayload = { name, username: username_, age, role, position, email, department, status, username };
-        if (password.trim()) {
-          updatePayload.password = password;
+        // For update, exclude password if empty
+        const updatePayload = { ...payload };
+        if (!updatePayload.password?.trim()) {
+          delete updatePayload.password;
         }
         await onUpdateEmployee(employeeData._id, updatePayload);
       } else {
         // For add, include password (required)
-        await onAddEmployee({ name, username: username_, age, role, position, password, email, department, status, username });
+        await onAddEmployee(payload);
       }
       
       // Reset form after successful submission
@@ -115,7 +118,7 @@ const EmployeeModal = ({
         email: "",
         password: "",
         age: "",
-        status: "Active",
+        status: "active",
         username: ""
       });
       setErrors({});
@@ -217,7 +220,7 @@ const EmployeeModal = ({
           <Dropdown
             label="Role"
             icon={<FaUserFriends className="w-4 h-4 text-gray-600" />}
-            placeholder="Eg. Employee"
+            placeholder="Select role"
             value={formData.role}
             options={roles}
             onSelect={(value) => handleSelect("role", value)}
@@ -259,7 +262,7 @@ const EmployeeModal = ({
           <Dropdown
             label="Department"
             icon={<FaBullhorn className="w-4 h-4 text-gray-600" />}
-            placeholder="Eg. Technology"
+            placeholder="Select department"
             value={formData.department}
             options={departments}
             onSelect={(value) => handleSelect("department", value)}
@@ -270,7 +273,7 @@ const EmployeeModal = ({
           {/* Status Dropdown */}
           <Dropdown
             label="Status"
-            placeholder="Eg. Active"
+            placeholder="Select status"
             value={formData.status}
             options={statusOptions}
             onSelect={(value) => handleSelect("status", value)}

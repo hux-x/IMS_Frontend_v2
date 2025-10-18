@@ -9,6 +9,7 @@ import {
   User,
   Target,
   Activity,
+  Lock,
 } from "lucide-react";
 import TaskCard from "@/components/cards/TaskCard";
 import CreateTask from "@/components/modals/createTask";
@@ -23,9 +24,10 @@ const TeamDashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
   const { teamId } = useParams();
   
-  // Use the hook methods with proper destructuring
   const { handleDeleteTask, handleUpdateTask, addTask } = useTasks();
 
   useEffect(() => {
@@ -40,7 +42,22 @@ const TeamDashboard = () => {
         console.error("Error fetching team:", error);
       }
     };
+    
+    const getUserInfo = () => {
+      try {
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setCurrentUserRole(user.role);
+          setCurrentUserId(user.id || user._id);
+        }
+      } catch (error) {
+        console.error("Error getting user info:", error);
+      }
+    };
+    
     getTeamDashboard();
+    getUserInfo();
   }, [teamId]);
 
   if (!teamData) {
@@ -53,7 +70,11 @@ const TeamDashboard = () => {
 
   const { team } = { team: teamData };
 
-  // Filter and sort tasks (newest first)
+  // Check if current user is admin or team lead
+  const isTeamLead = currentUserId === team.teamLead;
+  const isAdmin = currentUserRole === "admin";
+  const canCreateTask = isAdmin || isTeamLead;
+
   const filteredTasks = team.teamTasks
     .filter((task) => {
       const matchesSearch =
@@ -67,13 +88,11 @@ const TeamDashboard = () => {
       return matchesSearch && matchesStatus && matchesPriority;
     })
     .sort((a, b) => {
-      // Sort by creation date in descending order (newest first)
       const dateA = new Date(a.createdAt || a.updatedAt || 0);
       const dateB = new Date(b.createdAt || b.updatedAt || 0);
       return dateB - dateA;
     });
 
-  // Stats
   const totalTasks = team.teamTasks.length;
   const completedTasks = team.teamTasks.filter(
     (task) => task.status === "completed"
@@ -81,114 +100,93 @@ const TeamDashboard = () => {
   const inProgressTasks = team.teamTasks.filter(
     (task) => task.status === "inProgress"
   ).length;
-  const notStartedTasks = team.teamTasks.filter(
-    (task) => task.status === "started"
-  ).length;
   const onlineMembers = team.members.filter((member) => member.isOnline).length;
   const availableMembers = team.members.filter(
     (member) => member.available
   ).length;
 
-  // Create wrapper functions that update local state after hook operations
   const handleTaskUpdateWrapper = async (updatedTaskOrId, updatedTaskData = null) => {
     try {
       let taskId, updatedTask;
       
-      // Handle both calling patterns: (updatedTask) or (taskId, updatedTask)
       if (updatedTaskData === null) {
-        // Called with just (updatedTask)
         updatedTask = updatedTaskOrId;
         taskId = updatedTask._id;
-        console.log("TeamDashboard: Task update received (single param) - Task:", updatedTask);
       } else {
-        // Called with (taskId, updatedTask)
         taskId = updatedTaskOrId;
         updatedTask = updatedTaskData;
-        console.log("TeamDashboard: Task update received (two params) - ID:", taskId, "Data:", updatedTask);
       }
       
       if (!taskId) {
-        console.error("TeamDashboard: No task ID found in update request");
+        console.error("No task ID found");
         return;
       }
       
-      // Call the hook's update method
       await handleUpdateTask(taskId, updatedTask);
       
-      // Update local state to reflect the changes immediately
       setTeamData((prevTeamData) => {
         const updatedTasks = prevTeamData.teamTasks.map((task) =>
           task._id === taskId ? { ...task, ...updatedTask } : task
         );
-        
-        console.log("TeamDashboard: Local state updated for task ID:", taskId);
-        
         return {
           ...prevTeamData,
           teamTasks: updatedTasks,
         };
       });
     } catch (error) {
-      console.error("TeamDashboard: Error updating task:", error);
+      console.error("Error updating task:", error);
       alert("Failed to update task. Please try again.");
     }
   };
 
   const handleTaskDeleteWrapper = async (taskId) => {
     try {
-      console.log("TeamDashboard: Task delete requested for ID:", taskId);
-      
-      // Call the hook's delete method (same as Tasks.jsx)
       await handleDeleteTask(taskId);
       
-      // Update local state to remove the deleted task
       setTeamData((prevTeamData) => {
         const updatedTasks = prevTeamData.teamTasks.filter(
           (task) => task._id !== taskId
         );
-        
-        console.log("TeamDashboard: Task deleted from local state");
-        
         return {
           ...prevTeamData,
           teamTasks: updatedTasks,
         };
       });
     } catch (error) {
-      console.error("TeamDashboard: Error deleting task:", error);
+      console.error("Error deleting task:", error);
       alert("Failed to delete task. Please try again.");
     }
   };
 
   const handleCreateTask = async (newTaskData) => {
     try {
-      console.log("TeamDashboard: Creating new task:", newTaskData);
-      
-      // Use the same pattern as the working Tasks.jsx component
       await addTask(newTaskData);
-      
-      // Close the modal on success
       setIsCreateTaskOpen(false);
       
-      // Refresh team data to show the new task
       const refreshTeamDashboard = async () => {
         try {
           const res = await dashboardService.getTeamDashboard(teamId);
           if (res?.data?.team) {
             setTeamData(res.data.team);
-            console.log("TeamDashboard: Team data refreshed after task creation");
           }
         } catch (error) {
-          console.error("TeamDashboard: Error refreshing team data:", error);
+          console.error("Error refreshing team data:", error);
         }
       };
       
       await refreshTeamDashboard();
-      
     } catch (error) {
-      console.error("TeamDashboard: Error creating task:", error);
+      console.error("Error creating task:", error);
       alert(error.message || "Failed to create task. Please try again.");
     }
+  };
+
+  const handleCreateTaskClick = () => {
+    if (!canCreateTask) {
+      alert("Only team leads and admins can create tasks.");
+      return;
+    }
+    setIsCreateTaskOpen(true);
   };
 
   return (
@@ -201,8 +199,14 @@ const TeamDashboard = () => {
             <p className="text-gray-600">Led by {team.teamLead.name}</p>
           </div>
           <button
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-            onClick={() => setIsCreateTaskOpen(true)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              canCreateTask
+                ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            onClick={handleCreateTaskClick}
+            disabled={!canCreateTask}
+            title={canCreateTask ? "Create new task" : "Only team leads and admins can create tasks"}
           >
             <Plus size={16} />
             New Task
@@ -227,9 +231,7 @@ const TeamDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-3xl font-bold text-green-600">
-                  {completedTasks}
-                </p>
+                <p className="text-3xl font-bold text-green-600">{completedTasks}</p>
               </div>
               <CheckCircle2 className="h-12 w-12 text-green-600" />
             </div>
@@ -239,9 +241,7 @@ const TeamDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">In Progress</p>
-                <p className="text-3xl font-bold text-blue-600">
-                  {inProgressTasks}
-                </p>
+                <p className="text-3xl font-bold text-blue-600">{inProgressTasks}</p>
               </div>
               <Activity className="h-12 w-12 text-blue-600" />
             </div>
@@ -250,12 +250,8 @@ const TeamDashboard = () => {
           <div className="bg-white p-6 rounded-lg border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">
-                  Team Members
-                </p>
-                <p className="text-3xl font-bold text-gray-900">
-                  {team.members.length}
-                </p>
+                <p className="text-sm font-medium text-gray-600">Team Members</p>
+                <p className="text-3xl font-bold text-gray-900">{team.members.length}</p>
               </div>
               <Users className="h-12 w-12 text-purple-600" />
             </div>
@@ -333,6 +329,23 @@ const TeamDashboard = () => {
 
           {/* Team Members Sidebar */}
           <div className="space-y-6">
+            {/* Permissions Notice - Only show if user cannot create tasks */}
+            {!canCreateTask && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <Lock size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-900">
+                      Task Creation Restricted
+                    </p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Only team leads and admins can create tasks.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Team Overview */}
             <div className="bg-white rounded-lg border p-6">
               <h3 className="text-lg font-semibold mb-4">Team Overview</h3>
