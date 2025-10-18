@@ -1,14 +1,16 @@
 // File: src/components/CreateTask.jsx
 import React, { useEffect, useState } from "react";
 import { X, Check, Plus, Paperclip, Upload, FileText, Image as ImageIcon, Edit } from "lucide-react";
+import { useParams } from "react-router-dom";
 import taskService from "@/apis/services/taskService";
 import ImageMarker from "./ImageMarker";
 
 const CreateTask = ({ onClose, onCreate, isOpen }) => {
+  const { teamId } = useParams();
   const [taskData, setTaskData] = useState({
     title: "",
     description: "",
-    teamId: "",
+    teamId: teamId || "",
     assignedTo: "",
     priority: "high",
     deadline: "",
@@ -332,7 +334,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black"
                   required
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !!teamId}
                 >
                   <option value="">Select Team</option>
                   {teams.map((team) => (
