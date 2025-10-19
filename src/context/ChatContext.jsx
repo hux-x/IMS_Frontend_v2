@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef } from 
 import io from 'socket.io-client';
 import client from '@/apis/apiClient/client';
 import { AuthContext } from './authContext';
+import { toast } from 'react-toastify';
 
 // Chat Context
 const ChatContext = createContext();
@@ -159,6 +160,7 @@ export const ChatProvider = ({ children }) => {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
+  const {userId} = useContext(AuthContext)
 
   // Get token helper function
   const getAuthToken = () => {
@@ -276,6 +278,11 @@ export const ChatProvider = ({ children }) => {
 
       socket.on('new_message', (data) => {
         console.log('💬 New message received:', data.message);
+        if(data.message.sender.id  !== userId){
+
+          con
+          toast.info(`New message from ${data.message.sender.name}: ${data.message.content}`, { position: "top-left" });
+        }
         dispatch({ 
           type: CHAT_ACTIONS.ADD_MESSAGE, 
           payload: { 
