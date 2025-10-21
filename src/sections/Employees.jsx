@@ -30,6 +30,15 @@ export default function EmployeeList() {
 
   const handleAddEmployee = async (newEmployeeData) => {
     try {
+      const{
+          startTime,
+    endTime,
+    CNIC,
+    emergencyContact,
+    address,
+    contact,
+    permissions
+      } = newEmployeeData
       // Map the form data to match the API expected format
       const employeePayload = {
         name: newEmployeeData.name,
@@ -40,8 +49,16 @@ export default function EmployeeList() {
         password: newEmployeeData.password,
         email: newEmployeeData.email,
         department: newEmployeeData.department, 
-        contact: newEmployeeData.contact || '', // Optional field
-        team: null // Optional field
+        
+        team: null ,// Optional field,      startTime,
+    endTime,
+    startTime,
+    CNIC,
+    emergencyContact,
+    address,
+    contact,
+    permissions
+        
       };
 
       await addEmployee(employeePayload);

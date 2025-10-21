@@ -73,3 +73,11 @@ export const updateAttendanceRecord = async (attendanceId, recordId, status = nu
 export const deleteAttendanceRecord = async (attendanceId) => {
   return await client.delete(`/attendance/${attendanceId}`);
 };
+
+export const adminCheckinemployee = async(employeeId)=>{
+  return await client.post(`/attendance/admin-checkin?employeeId=${employeeId}`);
+}
+export const adminCheckOutemployee = async(employeeId)=>{
+  return await client.post(`/attendance/admin-checkout?employeeId=${employeeId}`);
+} 
+

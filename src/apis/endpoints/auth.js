@@ -1,8 +1,24 @@
 // src/apis/endpoints/auth.js
 import client from "@/apis/apiClient/client";
 
-export const registerEmployee = async (name, username, age, role, position, password,email,department,status) => {
-  return await client.post("/employees/register", { name, username, age, role, position, password,email,department,status });
+export const registerEmployee = async (name, username, age, role, position, password, email, department, status, startTime, endTime, emergencyContact, address, contact, CNIC) => {
+  return await client.post("/employees/register", { 
+    name, 
+    username, 
+    age, 
+    role, 
+    position, 
+    password, 
+    email, 
+    department, 
+    status, 
+    startTime, 
+    endTime, 
+    emergencyContact, 
+    address, 
+    contact,  // ← Add this
+    CNIC 
+  });
 };
 
 export const login = async (username, password) => {
@@ -25,13 +41,20 @@ export const updateEmployeeInfo = async (
     contact = null,
     team = null,
     available = null,
-    isOnline = null
+    isOnline = null,
+    startTime = null,
+    endTime = null,
+    CNIC= null,
+    emergencyContact=null,
+    address=null
   } = {}
 ) => {
   const body = {};
   
   // Only include fields that are not null/undefined
   if (name !== null && name !== undefined) body.name = name;
+  if (emergencyContact !== null && emergencyContact !== undefined) body.emergencyContact = emergencyContact;
+  if (address !== null && address !== undefined) body.address = address;
   if (username !== null && username !== undefined) body.username = username;
   if (email !== null && email !== undefined) body.email = email;
   if (age !== null && age !== undefined) body.age = age;
@@ -46,6 +69,9 @@ export const updateEmployeeInfo = async (
   if (team !== null && team !== undefined) body.team = team;
   if (available !== null && available !== undefined) body.available = available;
   if (isOnline !== null && isOnline !== undefined) body.isOnline = isOnline;
+  if(startTime !== null && startTime!== undefined) body.startTime = startTime;
+  if(endTime !== null && endTime!== undefined) body.endTime = endTime;
+  if(CNIC !== null && CNIC !== undefined) body.CNIC = CNIC
 
   return await client.put(`/employees/update/${id}`, body);
 };

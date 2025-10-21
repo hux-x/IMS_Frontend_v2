@@ -14,14 +14,15 @@ import { storeToken } from "@/apis/localStorage/tokenStorage";
 import { storeuserId } from "@/apis/localStorage/idStorage";
 
 const authService = {
-  registerEmployee: async ({name, username, age, role, position, password,email,department,status}) => {
+  registerEmployee: async ({name, username, age, role, position, password,email,department,status,startTime,endTime, emergencyContact,address,contact,CNIC}) => {
+  
     const response = await registerEmployee(
       name,
       username,
       age,
       role,
       position,
-      password,email,department,status
+      password,email,department,status,startTime,endTime, emergencyContact,address,contact, CNIC
     );
     return response;
   },
@@ -34,8 +35,8 @@ const authService = {
     }
     return response;
   },
-  updateEmployeeInfo: async (id, name, username, age, role, position) => {
-    return await updateEmployeeInfo(id, name, username, age, role, position);
+  updateEmployeeInfo: async (id, name, username, age, role, position,startTime,endTime, emergencyContact) => {
+    return await updateEmployeeInfo(id, name, username, age, role, position,startTime,endTime, emergencyContact);
   },
   getEmployees: async (limit, offset) => {
     return await getEmployees(limit, offset);

@@ -45,7 +45,12 @@ const useAuth = () => {
         email: employeeData.email,
         department: employeeData.department,
         contact: employeeData.contact || '',
-        team: employeeData.team || null
+        team: employeeData.team || null,
+        endTime:employeeData.endTime,
+        startTime:employeeData.startTime,
+        CNIC:employeeData.CNIC,
+        address: employeeData.address,
+        emergencyContact:employeeData.emergencyContact
       });
       
       // Add the new employee to the state

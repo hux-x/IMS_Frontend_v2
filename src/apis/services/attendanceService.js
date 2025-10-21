@@ -11,6 +11,8 @@ import {
   getAttendanceHistory,
   updateAttendanceRecord,
   deleteAttendanceRecord,
+  adminCheckOutemployee,
+  adminCheckinemployee,
 } from "@/apis/endpoints/attendance";
 
 const attendanceService = {
@@ -214,6 +216,22 @@ const attendanceService = {
       throw error;
     }
   },
+   adminCheckOutemployee : async(employeeId)=>{
+    try {
+      const response = await adminCheckOutemployee(employeeId);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+  adminCheckinemployee : async(employeeId)=>{
+    try {
+      const response = await adminCheckinemployee(employeeId);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
 
   formatWorkingHours: (hours) => {
     if (!hours || hours === 0) return '0h 0m';
@@ -357,7 +375,8 @@ const additionalAttendanceService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
+ 
 };
 
 export { additionalAttendanceService };

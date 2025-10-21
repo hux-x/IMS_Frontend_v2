@@ -15,9 +15,9 @@ const EmployeeModal = ({
   isModalOpen, 
   setIsModalOpen,
   loading = false,
-  mode = "add", // "add" or "edit"
-  employeeData = null, // Employee data for edit mode
-  availableRoles = [] // Roles provided by API
+  mode = "add",
+  employeeData = null,
+  availableRoles = []
 }) => {
   const [formData, setFormData] = useState({
     role: "",
@@ -27,13 +27,19 @@ const EmployeeModal = ({
     password: "",
     age: "",
     status: "active",
-    username: ""
+    username: "",
+    startTime: "",
+    endTime: "",
+    CNIC: "",
+    emergencyContact: "",
+    address: "",
+    contact: "",
+    permissions: []
   });
   
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Use roles from API, with fallback to default roles
   const roles = availableRoles && availableRoles.length > 0 
     ? availableRoles 
     : ["employee", "intern", "admin", "executive"];
@@ -58,13 +64,19 @@ const EmployeeModal = ({
         name: employeeData.name || "",
         department: employeeData.department || employeeData.position || "",
         email: employeeData.email || "",
-        password: "", // Don't populate password for security
+        password: "",
         age: employeeData.age?.toString() || "",
         status: employeeData.status?.toLowerCase() || "active",
-        username: employeeData.username || ""
+        username: employeeData.username || "",
+        startTime: employeeData.work_shift.startTime || "",
+        endTime: employeeData.work_shift.endTime || "",
+        CNIC: employeeData.CNIC || "",
+        emergencyContact: employeeData.emergencyContact || "",
+        address: employeeData.address || "",
+        contact: employeeData.contact || "",
+        permissions: employeeData.permissions || []
       });
     } else if (mode === "add") {
-      // Reset form for add mode
       setFormData({
         role: "",
         name: "",
@@ -73,7 +85,14 @@ const EmployeeModal = ({
         password: "",
         age: "",
         status: "active",
-        username: ""
+        username: "",
+        startTime: "",
+        endTime: "",
+        CNIC: "",
+        emergencyContact: "",
+        address: "",
+        contact: "",
+        permissions: []
       });
     }
     setErrors({});
@@ -95,22 +114,26 @@ const EmployeeModal = ({
         department: formData.department,
         status: formData.status.toLowerCase(),
         name: formData.name,
-        age: parseInt(formData.age) || 25
+        age: parseInt(formData.age) || 25,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        CNIC: formData.CNIC,
+        emergencyContact: formData.emergencyContact,
+        address: formData.address,
+        contact: formData.contact,
+        permissions: formData.permissions
       };
 
       if (mode === "edit") {
-        // For update, exclude password if empty
         const updatePayload = { ...payload };
         if (!updatePayload.password?.trim()) {
           delete updatePayload.password;
         }
         await onUpdateEmployee(employeeData._id, updatePayload);
       } else {
-        // For add, include password (required)
         await onAddEmployee(payload);
       }
       
-      // Reset form after successful submission
       setFormData({
         role: "",
         name: "",
@@ -119,7 +142,14 @@ const EmployeeModal = ({
         password: "",
         age: "",
         status: "active",
-        username: ""
+        username: "",
+        startTime: "",
+        endTime: "",
+        CNIC: "",
+        emergencyContact: "",
+        address: "",
+        contact: "",
+        permissions: []
       });
       setErrors({});
       
@@ -142,7 +172,6 @@ const EmployeeModal = ({
       newErrors.email = "Invalid email format";
     }
     
-    // Password validation - required for add mode, optional for edit mode
     if (mode === "add" && !formData.password?.trim()) {
       newErrors.password = "Password is required";
     } else if (formData.password?.trim() && formData.password.length < 6) {
@@ -151,6 +180,26 @@ const EmployeeModal = ({
     
     if (formData.age && (isNaN(formData.age) || parseInt(formData.age) < 18 || parseInt(formData.age) > 100)) {
       newErrors.age = "Age must be between 18 and 100";
+    }
+
+    // CNIC validation (Pakistani format: XXXXX-XXXXXXX-X)
+    if (formData.CNIC && !/^\d{5}-?\d{7}-?\d{1}$/.test(formData.CNIC.replace(/-/g, ''))) {
+      newErrors.CNIC = "Invalid CNIC format (13 digits)";
+    }
+
+    // Contact validation
+    if (formData.contact && !/^\+?[\d\s-]{10,}$/.test(formData.contact)) {
+      newErrors.contact = "Invalid contact number";
+    }
+
+    // Emergency contact validation
+    if (formData.emergencyContact && !/^\+?[\d\s-]{10,}$/.test(formData.emergencyContact)) {
+      newErrors.emergencyContact = "Invalid emergency contact";
+    }
+
+    // Time validation
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      newErrors.endTime = "End time must be after start time";
     }
     
     setErrors(newErrors);
@@ -164,7 +213,6 @@ const EmployeeModal = ({
       [name]: value
     }));
     
-    // Clear error for this field when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
@@ -176,14 +224,13 @@ const EmployeeModal = ({
       [field]: value
     }));
     
-    // Clear error for this field when user selects
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
   };
 
   const handleClose = () => {
-    if (isSubmitting) return; // Prevent closing while submitting
+    if (isSubmitting) return;
     setIsModalOpen(false);
   };
 
@@ -195,7 +242,7 @@ const EmployeeModal = ({
   const submitButtonIcon = isEditMode ? <FaEdit className="w-4 h-4" /> : <FaPlus className="w-4 h-4" />;
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-lg w-[680px]">
+    <div className="p-6 bg-white rounded-xl shadow-lg w-[680px] max-h-[90vh] overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -214,111 +261,74 @@ const EmployeeModal = ({
       <hr className="border border-gray-200 mb-6" />
 
       <form onSubmit={handleSubmit} noValidate>
-        {/* Form Grid */}
-        <div className="grid grid-cols-2 gap-6 mb-4">
-          {/* Role Dropdown */}
-          <Dropdown
-            label="Role"
-            icon={<FaUserFriends className="w-4 h-4 text-gray-600" />}
-            placeholder="Select role"
-            value={formData.role}
-            options={roles}
-            onSelect={(value) => handleSelect("role", value)}
-            error={errors.role}
-            required
-          />
-
-          {/* Employee Name */}
-          <div>
-            <InputField 
-              label="Employee Name" 
-              placeholder="Enter full name" 
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-            {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
-            )}
-          </div>
-          
-          {/* Username */}
-          <div>
-            <InputField 
-              label="Username" 
-              placeholder="Create a username (unique)" 
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
-            {errors.username && (
-              <p className="text-red-500 text-xs mt-1">{errors.username}</p>
-            )}
-          </div>
-          
-          {/* Department Dropdown */}
-          <Dropdown
-            label="Department"
-            icon={<FaBullhorn className="w-4 h-4 text-gray-600" />}
-            placeholder="Select department"
-            value={formData.department}
-            options={departments}
-            onSelect={(value) => handleSelect("department", value)}
-            error={errors.department}
-            required
-          />
-          
-          {/* Status Dropdown */}
-          <Dropdown
-            label="Status"
-            placeholder="Select status"
-            value={formData.status}
-            options={statusOptions}
-            onSelect={(value) => handleSelect("status", value)}
-            error={errors.status}
-            required
-          />
-        </div>
-
-        {/* Email, Password, and Age */}
-        <div className="flex flex-col gap-4">
-          <div>
-            <InputField 
-              label="Email" 
-              placeholder="Eg. example@gmail.com" 
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              type="email"
-              required
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-            )}
-          </div>
-          
+        {/* Basic Information Section */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Basic Information</h3>
           <div className="grid grid-cols-2 gap-4">
+            <Dropdown
+              label="Role"
+              icon={<FaUserFriends className="w-4 h-4 text-gray-600" />}
+              placeholder="Select role"
+              value={formData.role}
+              options={roles}
+              onSelect={(value) => handleSelect("role", value)}
+              error={errors.role}
+              required
+            />
+
             <div>
               <InputField 
-                label={isEditMode ? "Password (leave blank to keep current)" : "Password"} 
-                placeholder={isEditMode ? "Enter new password (optional)" : "Enter password (min 6 characters)"} 
-                name="password"
-                value={formData.password}
+                label="Employee Name" 
+                placeholder="Enter full name" 
+                name="name"
+                value={formData.name}
                 onChange={handleChange}
-                type="password"
-                required={!isEditMode}
+                required
               />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1">{errors.name}</p>
               )}
             </div>
             
             <div>
               <InputField 
+                label="Username" 
+                placeholder="Create a username" 
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+              {errors.username && (
+                <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+              )}
+            </div>
+            
+            <Dropdown
+              label="Department"
+              icon={<FaBullhorn className="w-4 h-4 text-gray-600" />}
+              placeholder="Select department"
+              value={formData.department}
+              options={departments}
+              onSelect={(value) => handleSelect("department", value)}
+              error={errors.department}
+              required
+            />
+            
+            <Dropdown
+              label="Status"
+              placeholder="Select status"
+              value={formData.status}
+              options={statusOptions}
+              onSelect={(value) => handleSelect("status", value)}
+              error={errors.status}
+              required
+            />
+
+            <div>
+              <InputField 
                 label="Age" 
-                placeholder="Enter age (optional)" 
+                placeholder="Enter age" 
                 name="age"
                 value={formData.age}
                 onChange={handleChange}
@@ -330,6 +340,136 @@ const EmployeeModal = ({
                 <p className="text-red-500 text-xs mt-1">{errors.age}</p>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Contact Information Section */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Contact Information</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <InputField 
+                label="Email" 
+                placeholder="example@gmail.com" 
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                type="email"
+                required
+              />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
+            </div>
+
+            <div>
+              <InputField 
+                label="Contact Number" 
+                placeholder="+92 300 1234567" 
+                name="contact"
+                value={formData.contact}
+                onChange={handleChange}
+                type="tel"
+              />
+              {errors.contact && (
+                <p className="text-red-500 text-xs mt-1">{errors.contact}</p>
+              )}
+            </div>
+
+            <div>
+              <InputField 
+                label="Emergency Contact" 
+                placeholder="+92 300 1234567" 
+                name="emergencyContact"
+                value={formData.emergencyContact}
+                onChange={handleChange}
+                type="tel"
+              />
+              {errors.emergencyContact && (
+                <p className="text-red-500 text-xs mt-1">{errors.emergencyContact}</p>
+              )}
+            </div>
+
+            <div>
+              <InputField 
+                label="CNIC" 
+                placeholder="XXXXX-XXXXXXX-X" 
+                name="CNIC"
+                value={formData.CNIC}
+                onChange={handleChange}
+                type="text"
+              />
+              {errors.CNIC && (
+                <p className="text-red-500 text-xs mt-1">{errors.CNIC}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <InputField 
+              label="Address" 
+              placeholder="Enter complete address" 
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              type="text"
+            />
+            {errors.address && (
+              <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Work Schedule Section */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Work Schedule</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <InputField 
+                label="Start Time" 
+                placeholder="09:00 AM" 
+                name="startTime"
+                value={formData.startTime}
+                onChange={handleChange}
+                type="time"
+              />
+              {errors.startTime && (
+                <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>
+              )}
+            </div>
+
+            <div>
+              <InputField 
+                label="End Time" 
+                placeholder="05:00 PM" 
+                name="endTime"
+                value={formData.endTime}
+                onChange={handleChange}
+                type="time"
+              />
+              {errors.endTime && (
+                <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Security Section */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Security</h3>
+          <div>
+            <InputField 
+              label={isEditMode ? "Password (leave blank to keep current)" : "Password"} 
+              placeholder={isEditMode ? "Enter new password (optional)" : "Enter password (min 6 characters)"} 
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              type="password"
+              required={!isEditMode}
+            />
+            {errors.password && (
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
           </div>
         </div>
 
