@@ -204,9 +204,31 @@ const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
 
   const progress = calculateProgress();
 
+  // Helper to get assignees display
+  const getAssigneesDisplay = () => {
+    if (!task.assignedTo) return "Unassigned";
+    
+    // Handle array of assignees
+    if (Array.isArray(task.assignedTo)) {
+      if (task.assignedTo.length === 0) return "Unassigned";
+      if (task.assignedTo.length === 1) {
+        const assignee = task.assignedTo[0];
+        return assignee.name || assignee.email || "Unknown";
+      }
+      return `${task.assignedTo.length} assignees`;
+    }
+    
+    // Handle single assignee (backward compatibility)
+    if (typeof task.assignedTo === 'object') {
+      return task.assignedTo.name || task.assignedTo.email || "Unassigned";
+    }
+    
+    return "Unassigned";
+  };
+
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 z-50"style={{backgroundColor: 'rgba(0, 0, 0, 0.6)'}}>
-      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-black p-4" >
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{backgroundColor: 'rgba(0, 0, 0, 0.6)'}}>
+      <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-black p-4">
         {/* Modal Header */}
         <div className="border-b p-4 flex justify-between items-center sticky top-0 bg-white z-10">
           <h3 className="text-lg font-semibold">Task Details</h3>
@@ -278,14 +300,34 @@ const TaskDetailModal = ({ task, onClose, onUpdateClick, onDelete }) => {
               <Clock size={16} className="text-gray-500" />
               <span>Created: {formatDate(task.createdAt)}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <User size={16} className="text-gray-500" />
-              <span>Assigned to: {task.assignedTo?.name || "Unassigned"}</span>
-            </div>
+            
+            {/* Assigned To - Handle both single and multiple assignees */}
+            {Array.isArray(task.assignedTo) && task.assignedTo.length > 0 ? (
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-gray-500" />
+                  <span>Assigned to: {task.assignedTo.length} {task.assignedTo.length === 1 ? 'person' : 'people'}</span>
+                </div>
+                <div className="ml-6 space-y-1">
+                  {task.assignedTo.map((assignee, index) => (
+                    <div key={index} className="text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded w-fit">
+                      {assignee.name || assignee.email}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-gray-500" />
+                <span>Assigned to: {getAssigneesDisplay()}</span>
+              </div>
+            )}
+            
             <div className="flex items-center gap-2">
               <User size={16} className="text-gray-500" />
               <span>Assigned by: {task.assignedBy?.name || "Unknown"}</span>
             </div>
+            
             {task.teamId && (
               <div className="flex items-center gap-2">
                 <Users size={16} className="text-gray-500" />

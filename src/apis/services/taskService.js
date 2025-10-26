@@ -36,6 +36,7 @@ const taskService = {
             priority = 'medium',
             todoChecklist 
         } = task;
+        console.log("TASK SERVICEEEEEEEEEEEEEEEEEEEEEEEE", task)
         
         return await createTask(
             assignedTo, 

@@ -2,7 +2,7 @@
 import client from "@/apis/apiClient/client";
 
 export const createTask = async (
-    assignedTo,
+    assignedTo, // Now an array of assignee IDs
     title,
     description,
     files = [], // Array of File objects
@@ -15,8 +15,18 @@ export const createTask = async (
     // Create FormData to handle file uploads
     const formData = new FormData();
     
+    console.log(assignedTo, title, deadline, teamId, todoChecklist, "TESTINGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
+    
     // Append all task data
-    formData.append('assignedTo', assignedTo);
+    // Handle assignedTo as array - append each ID separately
+    if (Array.isArray(assignedTo) && assignedTo.length > 0) {
+        assignedTo.forEach((id) => {
+            formData.append('assignedTo', id); // Backend will receive multiple values
+        });
+    } else if (typeof assignedTo === 'string' && assignedTo) {
+        formData.append('assignedTo', assignedTo); // Fallback for single string
+    }
+    
     formData.append('title', title);
     formData.append('description', description);
     formData.append('deadline', deadline);
@@ -37,6 +47,11 @@ export const createTask = async (
             }
         });
     }
+    
+    console.log("FormData contents:");
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+    }
 
     return await client.post("/tasks/create", formData, {
         headers: {
@@ -45,8 +60,12 @@ export const createTask = async (
     });
 };
 
-export const reassignTask = async (taskId, newAssigneeId) => {
-    return await client.put(`/tasks/reassign`, { newAssigneeId, taskId });
+export const reassignTask = async (taskId, newAssigneeIds) => {
+    // Updated to handle multiple assignees
+    return await client.put(`/tasks/reassign`, { 
+        newAssigneeIds: Array.isArray(newAssigneeIds) ? newAssigneeIds : [newAssigneeIds], 
+        taskId 
+    });
 };
 
 export const fetchAssignees = async () => {

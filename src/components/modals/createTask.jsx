@@ -11,7 +11,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
     title: "",
     description: "",
     teamId: teamId || "",
-    assignedTo: "",
+    assignedTo: [], // Changed to array for multiple assignees
     priority: "high",
     deadline: "",
     status: "Todo",
@@ -24,6 +24,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
   const [showImageMarker, setShowImageMarker] = useState(false);
   const [currentImageFile, setCurrentImageFile] = useState(null);
   const [imageIndex, setImageIndex] = useState(null);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
 
   // Fetch teams + members
   useEffect(() => {
@@ -43,10 +44,29 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
     const { name, value } = e.target;
     setTaskData((prev) => ({ ...prev, [name]: value }));
 
-    // reset assignee if team changes
+    // reset assignees if team changes
     if (name === "teamId") {
-      setTaskData((prev) => ({ ...prev, assignedTo: "" }));
+      setTaskData((prev) => ({ ...prev, assignedTo: [] }));
     }
+  };
+
+  const handleAssigneeToggle = (memberId) => {
+    setTaskData((prev) => {
+      const isSelected = prev.assignedTo.includes(memberId);
+      return {
+        ...prev,
+        assignedTo: isSelected
+          ? prev.assignedTo.filter((id) => id !== memberId)
+          : [...prev.assignedTo, memberId],
+      };
+    });
+  };
+
+  const removeAssignee = (memberId) => {
+    setTaskData((prev) => ({
+      ...prev,
+      assignedTo: prev.assignedTo.filter((id) => id !== memberId),
+    }));
   };
 
   const handleChecklistChange = (index, value) => {
@@ -140,6 +160,9 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
 
   // get members of selected team
   const selectedTeam = teams.find((t) => t._id === taskData.teamId);
+  const selectedMembers = selectedTeam?.members?.filter((m) =>
+    taskData.assignedTo.includes(m._id)
+  ) || [];
 
   return (
     <>
@@ -345,26 +368,44 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
                 </select>
               </div>
 
-              {/* Assignee */}
+              {/* Assignees */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Assignee
+                  Assignees
                 </label>
-                <select
-                  name="assignedTo"
-                  value={taskData.assignedTo}
-                  onChange={handleChange}
-                  disabled={!taskData.teamId || isSubmitting}
-                  className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50"
-                  required
-                >
-                  <option value="">Select Assignee</option>
-                  {selectedTeam?.members?.map((member) => (
-                    <option key={member._id} value={member._id}>
-                      {member.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+                    disabled={!taskData.teamId || isSubmitting}
+                    className="w-full border border-gray-300 rounded-xl p-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black disabled:opacity-50 text-left text-sm"
+                  >
+                    {taskData.assignedTo.length === 0
+                      ? "Select Assignees"
+                      : `${taskData.assignedTo.length} selected`}
+                  </button>
+
+                  {/* Dropdown */}
+                  {showAssigneeDropdown && taskData.teamId && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-10">
+                      {selectedTeam?.members?.map((member) => (
+                        <label
+                          key={member._id}
+                          className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={taskData.assignedTo.includes(member._id)}
+                            onChange={() => handleAssigneeToggle(member._id)}
+                            className="mr-2 accent-black"
+                            disabled={isSubmitting}
+                          />
+                          <span className="text-sm text-gray-700">{member.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Priority */}
@@ -430,6 +471,31 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
               </div>
             </div>
 
+            {/* Selected Assignees Display */}
+            {selectedMembers.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+                <p className="text-xs font-medium text-gray-600 mb-2">ASSIGNED TO:</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedMembers.map((member) => (
+                    <div
+                      key={member._id}
+                      className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-1.5"
+                    >
+                      <span className="text-sm text-gray-700">{member.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAssignee(member._id)}
+                        className="text-gray-400 hover:text-red-500 ml-1"
+                        disabled={isSubmitting}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <button
@@ -443,7 +509,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
               <button
                 type="submit"
                 className="px-4 py-2 bg-black text-white rounded-xl hover:opacity-90 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
+                disabled={isSubmitting || taskData.assignedTo.length === 0}
               >
                 {isSubmitting ? (
                   <>

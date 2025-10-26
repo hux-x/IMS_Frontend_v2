@@ -43,6 +43,7 @@ export const useAttendanceData = () => {
       const response = await attendanceService.getTodaysAttendance();
       if (response?.data?.attendance) {
         setTodaysAttendance(response.data.attendance);
+        console.log(response.data.attendance)
       }
       return response?.data?.attendance || null;
     } catch (err) {

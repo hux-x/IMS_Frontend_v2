@@ -68,8 +68,8 @@ const EmployeeModal = ({
         age: employeeData.age?.toString() || "",
         status: employeeData.status?.toLowerCase() || "active",
         username: employeeData.username || "",
-        startTime: employeeData.work_shift.startTime || "",
-        endTime: employeeData.work_shift.endTime || "",
+        startTime: employeeData.work_shift?.startTime || "",
+        endTime: employeeData.work_shift?.endTime || "",
         CNIC: employeeData.CNIC || "",
         emergencyContact: employeeData.emergencyContact || "",
         address: employeeData.address || "",
@@ -130,6 +130,7 @@ const EmployeeModal = ({
           delete updatePayload.password;
         }
         await onUpdateEmployee(employeeData._id, updatePayload);
+        console.log(updatePayload)
       } else {
         await onAddEmployee(payload);
       }
@@ -197,9 +198,14 @@ const EmployeeModal = ({
       newErrors.emergencyContact = "Invalid emergency contact";
     }
 
-    // Time validation
-    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
-      newErrors.endTime = "End time must be after start time";
+    // Time validation for 24-hour format
+    if (formData.startTime && formData.endTime) {
+      const start = formData.startTime;
+      const end = formData.endTime;
+      
+      if (start >= end) {
+        newErrors.endTime = "End time must be after start time";
+      }
     }
     
     setErrors(newErrors);
@@ -427,7 +433,7 @@ const EmployeeModal = ({
             <div>
               <InputField 
                 label="Start Time" 
-                placeholder="09:00 AM" 
+                placeholder="09:00" 
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleChange}
@@ -441,7 +447,7 @@ const EmployeeModal = ({
             <div>
               <InputField 
                 label="End Time" 
-                placeholder="05:00 PM" 
+                placeholder="17:00" 
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleChange}
@@ -452,6 +458,7 @@ const EmployeeModal = ({
               )}
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-2">Times are in 24-hour format (e.g., 09:00 for 9 AM, 17:00 for 5 PM)</p>
         </div>
 
         {/* Security Section */}

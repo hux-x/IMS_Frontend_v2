@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Users,
   Plus,
@@ -17,6 +17,7 @@ import teamService from "@/apis/services/teamService";
 import { useParams } from "react-router-dom";
 import dashboardService from "@/apis/services/dashboardService";
 import useTasks from "@/hooks/useTask";
+import { AuthContext } from "@/context/authContext";
 
 const TeamDashboard = () => {
   const [teamData, setTeamData] = useState(null);
@@ -24,7 +25,7 @@ const TeamDashboard = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState(null);
+  const {userRole:currentUserRole} = useContext(AuthContext)
   const [currentUserId, setCurrentUserId] = useState(null);
   const { teamId } = useParams();
   
@@ -43,21 +44,9 @@ const TeamDashboard = () => {
       }
     };
     
-    const getUserInfo = () => {
-      try {
-        const userStr = localStorage.getItem("user");
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          setCurrentUserRole(user.role);
-          setCurrentUserId(user.id || user._id);
-        }
-      } catch (error) {
-        console.error("Error getting user info:", error);
-      }
-    };
+  
     
     getTeamDashboard();
-    getUserInfo();
   }, [teamId]);
 
   if (!teamData) {

@@ -16,7 +16,7 @@ export const registerEmployee = async (name, username, age, role, position, pass
     endTime, 
     emergencyContact, 
     address, 
-    contact,  // ← Add this
+    contact,
     CNIC 
   });
 };
@@ -44,9 +44,9 @@ export const updateEmployeeInfo = async (
     isOnline = null,
     startTime = null,
     endTime = null,
-    CNIC= null,
-    emergencyContact=null,
-    address=null
+    CNIC = null,
+    emergencyContact = null,
+    address = null
   } = {}
 ) => {
   const body = {};
@@ -63,22 +63,29 @@ export const updateEmployeeInfo = async (
   if (department !== null && department !== undefined) body.department = department;
   if (status !== null && status !== undefined) body.status = status;
   if (password !== null && password !== undefined && password.trim() !== '') {
-    body.password = password.trim(); // Only include non-empty passwords
+    body.password = password.trim();
   }
   if (contact !== null && contact !== undefined) body.contact = contact;
   if (team !== null && team !== undefined) body.team = team;
   if (available !== null && available !== undefined) body.available = available;
   if (isOnline !== null && isOnline !== undefined) body.isOnline = isOnline;
-  if(startTime !== null && startTime!== undefined) body.startTime = startTime;
-  if(endTime !== null && endTime!== undefined) body.endTime = endTime;
-  if(CNIC !== null && CNIC !== undefined) body.CNIC = CNIC
+  if (CNIC !== null && CNIC !== undefined) body.CNIC = CNIC;
+  
+  // Handle work_shift - send both times together if either is provided
+  if (startTime !== null && startTime !== undefined || endTime !== null && endTime !== undefined) {
+    body.work_shift = {
+      startTime: startTime !== null && startTime !== undefined ? startTime : undefined,
+      endTime: endTime !== null && endTime !== undefined ? endTime : undefined
+    };
+  }
+  
+  console.log(body, " sending data to the backend");
 
   return await client.put(`/employees/update/${id}`, body);
 };
 
-
 export const getEmployees = async (limit, offset) => {
-  return await client.get(`/employees/all?limit=${limit}&offset=${offset}`); // Adjusted to use /all
+  return await client.get(`/employees/all?limit=${limit}&offset=${offset}`);
 };
 
 export const getFilteredEmployees = async (limit, offset, role = null, position = null, status = null, available = null) => {
@@ -90,7 +97,7 @@ export const getFilteredEmployees = async (limit, offset, role = null, position 
     ...(status && { status }),
     ...(available && { available }),
   }).toString();
-  return await client.get(`/employees/filtered?${query}`); // Fixed to match backend
+  return await client.get(`/employees/filtered?${query}`);
 };
 
 export const getAllEmployees = async () => {
@@ -106,5 +113,5 @@ export const forgotPassword = async (username, newPassword) => {
 };
 
 export const deleteEmployee = async (id) => {
-  return await client.delete(`/employees/delete/${id}`); // Fixed URL to match backend
+  return await client.delete(`/employees/delete/${id}`);
 };

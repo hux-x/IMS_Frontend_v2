@@ -18,6 +18,7 @@ const AttendanceSection = () => {
     } = useAttendanceData();
 
     const [filteredEmployees, setFilteredEmployees] = useState([]);
+
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Status');
     const [processingEmployee, setProcessingEmployee] = useState(null);

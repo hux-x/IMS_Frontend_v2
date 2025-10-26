@@ -65,7 +65,7 @@ const TaskCard = ({ task,onUpdate,onDelete }) => {
         <p className="text-sm text-gray-600 mb-4 line-clamp-2">{task.description || "No description"}</p>
 
         <div className="flex items-center text-sm text-gray-500 mb-3">
-          <span className="font-medium">👤 {task.assignedTo?.name || "Unassigned"}</span>
+          <span className="font-medium">👤 {task.assignedTo?.length || "Unassigned"}</span>
           {task.deadline && (
             <span className="flex items-center gap-1 ml-4">
               <CalendarDays size={14} /> {formatDate(task.deadline)}

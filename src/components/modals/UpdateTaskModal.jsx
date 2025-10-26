@@ -25,6 +25,8 @@ const UpdateTaskModal = ({ task, onClose, onSave }) => {
     todoChecklist: task.todoChecklist || [],
     attachments: task.attachments || []
   });
+
+  console.log(task, "INSIDE UPDATE TASK MODAL XXXXXXXXX")
   const [showChecklist, setShowChecklist] = useState(true);
   const [showAttachments, setShowAttachments] = useState(true);
   const [newChecklistItem, setNewChecklistItem] = useState("");
@@ -202,7 +204,7 @@ const UpdateTaskModal = ({ task, onClose, onSave }) => {
             </div>
 
             {/* Assignee */}
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Assigned To</label>
               <input
                 type="text"
@@ -212,7 +214,7 @@ const UpdateTaskModal = ({ task, onClose, onSave }) => {
                 className="w-full border rounded p-2"
                 placeholder="Assignee name"
               />
-            </div>
+            </div> */}
 
             {/* Checklist */}
             <div className="border rounded-lg overflow-hidden">

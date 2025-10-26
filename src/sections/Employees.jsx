@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import EmployeeModal from '@/components/modals/createEmployee'; // Updated import
+import EmployeeModal from '@/components/modals/createEmployee';
 import EmployeeTable from '@/components/layout/ReuableTable';
 import { FaPlus, FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import useAuth from '@/hooks/useAuth';
@@ -8,7 +8,7 @@ export default function EmployeeList() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
+  const [modalMode, setModalMode] = useState('add');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   
   const columns = ["EMPLOYEE NAME", "DEPARTMENT", "ROLE", "STATUS"];
@@ -23,48 +23,14 @@ export default function EmployeeList() {
     updateEmployee 
   } = useAuth();
 
-  // Load employees on component mount
   useEffect(() => {
     getEmployees();
   }, [getEmployees]);
 
   const handleAddEmployee = async (newEmployeeData) => {
     try {
-      const{
-          startTime,
-    endTime,
-    CNIC,
-    emergencyContact,
-    address,
-    contact,
-    permissions
-      } = newEmployeeData
-      // Map the form data to match the API expected format
-      const employeePayload = {
-        name: newEmployeeData.name,
-        username: newEmployeeData.username,
-        age: newEmployeeData.age || 25,
-        role: newEmployeeData.role.toLowerCase(),
-        position: newEmployeeData.department, // Map department to position
-        password: newEmployeeData.password,
-        email: newEmployeeData.email,
-        department: newEmployeeData.department, 
-        
-        team: null ,// Optional field,      startTime,
-    endTime,
-    startTime,
-    CNIC,
-    emergencyContact,
-    address,
-    contact,
-    permissions
-        
-      };
-
-      await addEmployee(employeePayload);
+      await addEmployee(newEmployeeData);
       setIsEmployeeModalOpen(false);
-      
-      // Show success message (you can replace this with your preferred notification system)
       alert('Employee added successfully!');
     } catch (err) {
       console.error('Error adding employee:', err);
@@ -74,31 +40,13 @@ export default function EmployeeList() {
 
   const handleUpdateEmployee = async (employeeId, updateData) => {
     try {
-      // Map the form data to match the API expected format
-      const updatePayload = {
-        name: updateData.name,
-        username: updateData.username,
-        age: updateData.age || 25,
-        role: updateData.role.toLowerCase(),
-        position: updateData.department, // Map department to position
-        email: updateData.email,
-        department: updateData.department,
-        contact: updateData.contact || '',
-        team: updateData.team || null,
-        status: updateData.status
-      };
-
-      // Only include password if it's provided
-      if (updateData.password && updateData.password.trim()) {
-        updatePayload.password = updateData.password;
-      }
-
-      await updateEmployee(employeeId, updatePayload);
+      // Create the update payload - no need to filter password here
+      // The modal already handles password correctly
+      await updateEmployee(employeeId, updateData);
       setIsEmployeeModalOpen(false);
       setSelectedEmployee(null);
       setModalMode('add');
       
-      // Show success message
       alert('Employee updated successfully!');
     } catch (err) {
       console.error('Error updating employee:', err);
@@ -106,34 +54,28 @@ export default function EmployeeList() {
     }
   };
 
-  // Filter employees based on search
   const filteredData = employees?.filter(employee =>
     employee?.name?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
-  // Calculate total pages
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  // Handle page change
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
-  // Open add employee modal
   const openAddEmployeeModal = () => {
     setModalMode('add');
     setSelectedEmployee(null);
     setIsEmployeeModalOpen(true);
   };
 
-  // Open edit employee modal
   const openEditEmployeeModal = (employee) => {
     setModalMode('edit');
     setSelectedEmployee(employee);
     setIsEmployeeModalOpen(true);
   };
 
-  // Close modal
   const closeEmployeeModal = () => {
     setIsEmployeeModalOpen(false);
     setSelectedEmployee(null);
@@ -141,14 +83,12 @@ export default function EmployeeList() {
   };
 
   const handleEditEmployee = (employeeData) => {
-    // Find the full employee data from the employees array
     const fullEmployeeData = employees.find(emp => emp._id === employeeData.id);
     if (fullEmployeeData) {
       openEditEmployeeModal(fullEmployeeData);
     }
   };
 
-  // Transform employee data to match table expected format
   const transformedData = filteredData.map(employee => ({
     id: employee._id,
     name: employee.name,
