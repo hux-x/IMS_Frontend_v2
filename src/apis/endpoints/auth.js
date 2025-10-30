@@ -119,3 +119,6 @@ export const deleteEmployee = async (id) => {
 export const getUserInfo = async ()=>{
   return await client.get("/employees/me");
 };
+export const tokenPasswordReset = async (password, token) => {
+  return await client.post("/employees/reset-password-token", { password, token });
+}
