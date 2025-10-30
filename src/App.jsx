@@ -13,7 +13,7 @@ import Chats from '@/sections/Chats';
 import Attendance from '@/sections/Attendance';
 import Reports from '@/sections/Reports';
 import Teams from '@/sections/Teams';
-import AdminPanel from '@/sections/AdminPanel';
+import AdminPanel from '@/sections/SystemManagement';
 import TeamDashboard from './pages/TeamDashboard';
 import ProjectProposed from '@/sections/ProjectProposed';
 import Bugs from '@/sections/Bugs';
@@ -42,7 +42,7 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <ChatProvider>
+     
       <Routes>
         {/* Public Route: Login page */}
         <Route 
@@ -69,7 +69,7 @@ function App() {
           {/* Common routes */}
           <Route index path="dashboard" element={<Dashboard />} />
           <Route path="tasks" element={<Tasks />} />
-          <Route path="chat" element={<Chats />} />
+         
           <Route path="attendance" element={<Attendance />} />
 
           {/* Admin-only routes */}
@@ -99,14 +99,16 @@ function App() {
           <Route path="projectproposed" element={<ProjectProposed />} />
           <Route path="bugs" element={<Bugs />} />
           <Route path="meetings" element={<MeetingDashboard />} />
+          
         </Route>
 
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/login" />} />
+         <Route path="chat" element={<Chats />} />
       </Routes>
       
       <ToastContainer position="top-right" autoClose={3000} />
-      </ChatProvider>
+  
     </AuthProvider>
   );
 }

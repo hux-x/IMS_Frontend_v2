@@ -9,6 +9,7 @@ import {
   forgotPassword,
   deleteEmployee,
   getAllEmployees,
+  getUserInfo
 } from "@/apis/endpoints/auth";
 import { storeToken } from "@/apis/localStorage/tokenStorage";
 import { storeuserId } from "@/apis/localStorage/idStorage";
@@ -35,8 +36,8 @@ const authService = {
     }
     return response;
   },
-  updateEmployeeInfo: async (id, name, username, age, role, position,startTime,endTime, emergencyContact) => {
-    return await updateEmployeeInfo(id, name, username, age, role, position,startTime,endTime, emergencyContact);
+  updateEmployeeInfo: async (id,updates) => {
+    return await updateEmployeeInfo(id, updates);
   },
   getEmployees: async (limit, offset) => {
     return await getEmployees(limit, offset);
@@ -69,6 +70,9 @@ const authService = {
   },
   getAllEmployees: async () => {
     return await getAllEmployees();
+  },
+  getUserInfo: async ()=>{
+    return await getUserInfo();
   }
 };
 export default authService;

@@ -27,10 +27,11 @@ export const AuthProvider = ({ children }) => {
           return
         }
         const decoded = jwtDecode(token);
-        console.log("Decoded token:", decoded); // Debug log
+  
         setUserRole(decoded.role);
         setEmail(decoded.email);
         setName(decoded.name)
+        console.log(decoded, "DECDED")
         setUserId(storedUserId || decoded.id);
         setIsAuthenticated(true);
       } catch (err) {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { 
   FaPlus, 
   FaUserFriends, 
@@ -8,6 +8,7 @@ import {
 } from "react-icons/fa";
 import InputField from "@/components/custom/InputField";
 import Dropdown from "@/components/custom/Dropdown";
+import systemService from "@/apis/services/systemService";
 
 const EmployeeModal = ({ 
   onAddEmployee,
@@ -40,19 +41,32 @@ const EmployeeModal = ({
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const roles = availableRoles && availableRoles.length > 0 
-    ? availableRoles 
-    : ["employee", "intern", "admin", "executive"];
-  
-  const departments = [
-    "Technology",
-    "Human Resources", 
-    "Finance",
-    "Marketing",
-    "Operations",
-    "Sales",
-    "Customer Support"
-  ];
+
+  const [departments, setDepartments] = useState([]);
+  const [roles,setRoles] = useState([]);
+
+  useEffect(() => {
+    const fetchDepartmentsAndRoles = async () => {
+     try {
+       const resDep = await systemService.getDepartments();
+      const resRoles = await systemService.getRoles();
+      console.log(resRoles);
+      if (resDep && resDep.data) {
+        setDepartments(resDep.data.departments || []);
+      }
+      if (resRoles && resRoles.data) {
+        if (resRoles && resRoles.data) {
+  const formattedRoles = resRoles.data.roles.map(r => r.type); // <-- Extract the type string
+  setRoles(formattedRoles);
+}
+
+      }
+     } catch (error) {
+      console.log("Error fetching departments and roles:", error);  
+     }
+    };
+    fetchDepartmentsAndRoles();
+  },[])
   
   const statusOptions = ["active", "inactive"];
 

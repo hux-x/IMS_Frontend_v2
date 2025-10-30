@@ -31,6 +31,8 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Employees', icon: UserCircle, path: '/employees', roles: ['admin'] },
     { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed', roles: ['admin'] },
     { name: 'Meetings', icon: Group, path: '/meetings', roles: ['admin'] },
+    { name: 'Admin Panel', icon: Group, path: '/admin', roles: ['admin'] },
+
   ];
 
   // Filter menu items based on user role

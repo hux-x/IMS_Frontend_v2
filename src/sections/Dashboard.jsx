@@ -30,6 +30,7 @@ const Dashboard = () => {
   const { dashboard, loading, error } = useDashboard();
   const { handleUpdateTask, handleDeleteTask } = useTasks();
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [showNotification, setShowNotification] = useState(true); // State for notification
   const { userRole } = useContext(AuthContext);
 
   // Check if user is admin or teamLead
@@ -89,6 +90,16 @@ const Dashboard = () => {
   const unreadCount = dashboard?.unread_count || 0;
   const meetings = dashboard?.meetings || [];
   const meetingCount = dashboard?.meetingCount || 0;
+  const notification = dashboard?.announcement || null; // Get notification data
+  console.log(notification);
+
+  // Check if the notification is expired
+  let isExpired = false;
+  if (notification && notification.duration) {
+    const expiryDate = new Date(notification.duration);
+    const now = new Date();
+    isExpired = now > expiryDate;
+  }
 
   console.log(dashboard);
 
@@ -133,6 +144,44 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* --- Notification Banner --- */}
+      {notification && showNotification && !isExpired && (
+        <div className="relative flex items-start gap-4 rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-sm">
+          <div className="flex-shrink-0 pt-0.5 text-blue-600">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h3 className="mb-1 font-semibold text-blue-800">Announcement</h3>
+            <p className="text-sm text-blue-700 whitespace-pre-wrap">
+              {notification.message}
+            </p>
+            {notification.link && (
+              <a 
+                href={notification.link} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline"
+              >
+                Learn More
+              </a>
+            )}
+            <p className="mt-2 text-xs text-blue-500">
+              Posted: {new Date(notification.createdAt).toLocaleString()}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowNotification(false)}
+            className="absolute top-3 right-3 flex-shrink-0 text-blue-500 hover:text-blue-700"
+            aria-label="Dismiss notification"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+      {/* --- End Notification Banner --- */}
+
+
       <SectionHeader
         title={`Welcome back, ${employeeData.name || 'User'}! 👋`}
         subtitle={`Here's what's happening with your work today.`}

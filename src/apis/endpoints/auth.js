@@ -115,3 +115,7 @@ export const forgotPassword = async (username, newPassword) => {
 export const deleteEmployee = async (id) => {
   return await client.delete(`/employees/delete/${id}`);
 };
+
+export const getUserInfo = async ()=>{
+  return await client.get("/employees/me");
+};
