@@ -19,6 +19,8 @@ import ProjectProposed from '@/sections/ProjectProposed';
 import Bugs from '@/sections/Bugs';
 import MeetingDashboard from './sections/Meetings';
 import { ChatProvider } from './context/ChatContext';
+import ResetPassword from './pages/ResetPassword';
+import ForgotPassword from './pages/ForgotPassword';
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, userRole, loading } = React.useContext(AuthContext);
   
@@ -105,6 +107,8 @@ function App() {
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/login" />} />
          <Route path="chat" element={<Chats />} />
+         <Route path="reset-password" element={<ResetPassword/>} />
+         <Route path="forgot-password" element={<ForgotPassword/>} />
       </Routes>
       
       <ToastContainer position="top-right" autoClose={3000} />

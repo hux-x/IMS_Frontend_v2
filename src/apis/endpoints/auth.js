@@ -108,8 +108,8 @@ export const resetPassword = async (password, candidatePassword) => {
   return await client.post("/employees/reset-password", { password, candidatePassword });
 };
 
-export const forgotPassword = async (username, newPassword) => {
-  return await client.post("/employees/forgot-password", { username, newPassword });
+export const forgotPassword = async (email) => {
+  return await client.post("/employees/forgot-password", { email });
 };
 
 export const deleteEmployee = async (id) => {

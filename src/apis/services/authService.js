@@ -9,7 +9,9 @@ import {
   forgotPassword,
   deleteEmployee,
   getAllEmployees,
-  getUserInfo
+  getUserInfo,
+  tokenPasswordReset
+ 
 } from "@/apis/endpoints/auth";
 import { storeToken } from "@/apis/localStorage/tokenStorage";
 import { storeuserId } from "@/apis/localStorage/idStorage";
@@ -62,8 +64,8 @@ const authService = {
   resetPassword: async (password, candidatePassword) => {
     return await resetPassword(password, candidatePassword);
   },
-  forgotPassword: async (username, newPassword) => {
-    return await forgotPassword(username, newPassword);
+  forgotPassword: async (email) => {
+    return await forgotPassword(email);
   },
   deleteEmployee: async (id) => {
     return await deleteEmployee(id);
@@ -73,6 +75,9 @@ const authService = {
   },
   getUserInfo: async ()=>{
     return await getUserInfo();
+  },
+  resetPasswordForToken: async (password, token) => {
+    return await tokenPasswordReset(password, token);
   }
 };
 export default authService;
