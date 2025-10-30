@@ -105,10 +105,11 @@ function App() {
         </Route>
 
         {/* Catch-all redirect */}
-        <Route path="*" element={<Navigate to="/login" />} />
+      
          <Route path="chat" element={<Chats />} />
          <Route path="reset-password" element={<ResetPassword/>} />
          <Route path="forgot-password" element={<ForgotPassword/>} />
+           <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
       
       <ToastContainer position="top-right" autoClose={3000} />

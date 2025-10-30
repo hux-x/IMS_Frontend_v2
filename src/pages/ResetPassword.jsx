@@ -30,11 +30,12 @@ export default function ResetPassword() {
 
     try {
       setLoading(true);
-      await authService.
+      await authService.resetPasswordForToken(password, token);
       toast.success("Password reset successful. Please login.");
       navigate("/login");
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong.");
+      console.error("Reset password error:", error);
     } finally {
       setLoading(false);
     }
