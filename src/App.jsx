@@ -24,6 +24,11 @@ import ForgotPassword from './pages/ForgotPassword';
 const PrivateRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, userRole, loading } = React.useContext(AuthContext);
   
+  Notification.requestPermission().then((permission) => {
+    if (permission === 'granted') {
+      console.log('Notification permission granted.');
+    }
+  });
   if (loading) return <div>Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" />;
   if (allowedRoles && !allowedRoles.includes(userRole)) {

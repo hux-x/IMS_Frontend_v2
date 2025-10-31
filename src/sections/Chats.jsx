@@ -120,7 +120,6 @@ const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpda
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col">
-        {/* Modal Header */}
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Group Info</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
@@ -128,13 +127,11 @@ const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpda
           </button>
         </div>
 
-        {/* Group Avatar */}
         <div className="p-6 border-b border-gray-200 flex flex-col items-center">
           <div className="w-20 h-20 rounded-full bg-purple-500 flex items-center justify-center text-white mb-3">
             <Users className="w-10 h-10" />
           </div>
           
-          {/* Group Name */}
           {isEditing ? (
             <div className="flex items-center gap-2 w-full max-w-xs">
               <input
@@ -180,7 +177,6 @@ const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpda
           </p>
         </div>
 
-        {/* Members List */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -196,7 +192,6 @@ const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpda
               )}
             </div>
 
-            {/* Add Member Section */}
             {showAddMember && isAdmin && (
               <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                 <input
@@ -228,7 +223,6 @@ const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpda
               </div>
             )}
 
-            {/* Current Members */}
             <div className="space-y-2">
               {chat.users?.map(member => {
                 const isMemberAdmin = member._id === chat.groupAdmin?._id;
@@ -429,11 +423,9 @@ const NewChatModal = ({ isOpen, onClose, allUsers, currentUserId, onStartChat, e
   
   if (!isOpen) return null;
 
-  // Filter out users who already have a chat
   const availableUsers = allUsers
     .filter(u => u._id !== currentUserId)
     .filter(u => {
-      // Check if one-on-one chat already exists
       const chatExists = existingChats.some(chat => 
         !chat.isGroupChat && chat.users?.some(cu => cu._id === u._id)
       );
@@ -506,6 +498,7 @@ const ChatPage = () => {
   const user = userId ? { _id: userId, name, email } : null;
   
   const [chats, setChats] = useState([]);
+  const [chatMessages, setChatMessages] = useState(new Map());
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
@@ -520,8 +513,7 @@ const ChatPage = () => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(new Map());
-  const [notifications, setNotifications] = useState([]);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -529,8 +521,18 @@ const ChatPage = () => {
   const socketRef = useRef(null);
   const audioRef = useRef(null);
 
-  // Initialize audio for notifications
+  // Request notification permission on mount
   useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then(permission => {
+          setNotificationPermission(permission);
+        });
+      }
+    }
+
+    // Initialize audio for notifications
     audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCx+zPLTgjMGHm7A7+OZUQ0PXKPQ7ahVFApGn+DyvmwhBCx+zPLTgjMGHm7A7+OZUw8P');
   }, []);
 
@@ -541,7 +543,7 @@ const ChatPage = () => {
     }
   };
 
-  // Show notification
+  // Show browser notification
   const showNotification = (title, body, chatId) => {
     if (!('Notification' in window)) return;
     
@@ -549,16 +551,18 @@ const ChatPage = () => {
       const notification = new Notification(title, {
         body,
         icon: '/chat-icon.png',
-        tag: chatId
+        tag: chatId,
+        requireInteraction: false
       });
       
       notification.onclick = () => {
         window.focus();
         const chat = chats.find(c => c._id === chatId);
         if (chat) handleChatSelect(chat);
+        notification.close();
       };
-    } else if (Notification.permission !== 'denied') {
-      Notification.requestPermission();
+
+      setTimeout(() => notification.close(), 5000);
     }
   };
 
@@ -609,16 +613,16 @@ const ChatPage = () => {
       socketService.offUserOffline();
       disconnectSocket();
     };
-  }, [userId, user?._id]);
+  }, [userId]);
 
-  // Load initial data
+  // Load initial data - ALL chats with their messages
   const loadInitialData = async () => {
     try {
       setLoading(true);
       
-      // Load chats and users in parallel
+      // Load chats and users
       const [chatsResponse, usersResponse] = await Promise.all([
-        chatService.getChats(0, 30),
+        chatService.getChats(0, 100),
         chatService.getAllUsers()
       ]);
 
@@ -626,17 +630,23 @@ const ChatPage = () => {
       setChats(chatsData);
       setAllUsers(usersResponse.data.employees || []);
 
-      // Load first 30 messages for each chat
-      const chatsWithMessages = await Promise.all(
-        chatsData.slice(0, 10).map(async (chat) => {
+      // Load messages for ALL chats in parallel
+      const messagesMap = new Map();
+      const unreadMap = new Map();
+
+      await Promise.all(
+        chatsData.map(async (chat) => {
           try {
             const response = await chatService.getChatWithMessages(chat._id, 30);
             let messagesData = [];
+            
             if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
               messagesData = response.data.data.messages;
             } else if (response.data?.messages && Array.isArray(response.data.messages)) {
               messagesData = response.data.messages;
             }
+            
+            messagesMap.set(chat._id, messagesData);
             
             // Count unread messages
             const unread = messagesData.filter(m => 
@@ -644,18 +654,19 @@ const ChatPage = () => {
             ).length;
             
             if (unread > 0) {
-              setUnreadMessages(prev => new Map(prev).set(chat._id, unread));
+              unreadMap.set(chat._id, unread);
             }
-            
-            return { ...chat, preloadedMessages: messagesData };
           } catch (error) {
-            console.error('Error preloading messages for chat:', chat._id, error);
-            return { ...chat, preloadedMessages: [] };
+            console.error('Error loading messages for chat:', chat._id, error);
+            messagesMap.set(chat._id, []);
           }
         })
       );
 
-      setInitialLoadComplete(true);
+      setChatMessages(messagesMap);
+      setUnreadMessages(unreadMap);
+      
+      console.log('✅ Loaded messages for', messagesMap.size, 'chats');
     } catch (error) {
       console.error('Error loading initial data:', error);
       setChats([]);
@@ -665,14 +676,28 @@ const ChatPage = () => {
     }
   };
 
-  // Setup message listener
+  // Setup GLOBAL message listener (not just for selected chat)
   useEffect(() => {
     if (!socketRef.current || !userId) return;
 
     const handleNewMessage = (message) => {
       console.log('💬 Message received:', message);
       
-      // Update messages if it's for the currently selected chat
+      // Update chatMessages map
+      setChatMessages(prev => {
+        const newMap = new Map(prev);
+        const chatMsgs = newMap.get(message.chat) || [];
+        
+        // Check if message already exists
+        const exists = chatMsgs.some(m => m._id === message._id);
+        if (!exists) {
+          newMap.set(message.chat, [...chatMsgs, message]);
+        }
+        
+        return newMap;
+      });
+
+      // Update selected chat messages if applicable
       if (selectedChat && message.chat === selectedChat._id) {
         setMessages(prev => {
           const exists = prev.some(m => m._id === message._id);
@@ -695,21 +720,23 @@ const ChatPage = () => {
             return newMap;
           });
           
-          // Show notification
+          // Show notification and play sound
           playNotificationSound();
+          const senderName = message.sender?.name || 'Someone';
           showNotification(
-            message.sender.name,
+            senderName,
             message.message,
             message.chat
           );
         }
       }
 
-      // Update chat list
+      // Update chat list - move chat to top and update latest message
       setChats(prev => {
         const chatExists = prev.some(c => c._id === message.chat);
         
         if (!chatExists) {
+          // New chat created
           const newChat = {
             _id: message.chat,
             latestMessage: message,
@@ -726,6 +753,7 @@ const ChatPage = () => {
             : chat
         );
         
+        // Move updated chat to top
         const chatIndex = updatedChats.findIndex(c => c._id === message.chat);
         if (chatIndex > 0) {
           const [updatedChat] = updatedChats.splice(chatIndex, 1);
@@ -737,6 +765,19 @@ const ChatPage = () => {
     };
 
     const handleMessageRead = ({ messageId }) => {
+      // Update in chatMessages map
+      setChatMessages(prev => {
+        const newMap = new Map(prev);
+        for (const [chatId, msgs] of newMap.entries()) {
+          const updated = msgs.map(m => 
+            m._id === messageId ? { ...m, isRead: true } : m
+          );
+          newMap.set(chatId, updated);
+        }
+        return newMap;
+      });
+
+      // Update selected chat messages
       setMessages(prev => prev.map(msg => 
         msg._id === messageId ? { ...msg, isRead: true } : msg
       ));
@@ -749,7 +790,7 @@ const ChatPage = () => {
       socketService.offMessageReceived();
       socketService.offMessageRead();
     };
-  }, [selectedChat, userId, user?._id]);
+  }, [selectedChat, userId, user, chats]);
 
   // Join/leave chat rooms
   useEffect(() => {
@@ -769,40 +810,60 @@ const ChatPage = () => {
     if (selectedChat?._id === chat._id) return;
 
     setSelectedChat(chat);
-    setLoading(true);
+
+    // Clear unread count for this chat
+    setUnreadMessages(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(chat._id);
+      return newMap;
+    });
+
+    // Use cached messages from chatMessages map
+    const cachedMessages = chatMessages.get(chat._id) || [];
+    setMessages(cachedMessages);
+    
+    // Mark unread messages as read
+    cachedMessages.forEach(msg => {
+      if (msg.sender._id !== user?._id && !msg.isRead) {
+        socketService.markMessageAsRead(msg._id, user._id);
+      }
+    });
+
+    scrollToBottom();
+  };
+
+  // Load more messages (pagination)
+  const loadMoreMessages = async () => {
+    if (!selectedChat || messages.length === 0) return;
 
     try {
-      // Clear unread count for this chat
-      setUnreadMessages(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(chat._id);
-        return newMap;
-      });
-
-      // Use preloaded messages if available
-      if (chat.preloadedMessages && chat.preloadedMessages.length > 0) {
-        setMessages(chat.preloadedMessages);
-        setLoading(false);
-        scrollToBottom();
-        return;
-      }
-
-      // Otherwise load messages
-      const response = await chatService.getChatWithMessages(chat._id, 30);
-      let messagesData = [];
-      if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
-        messagesData = response.data.data.messages;
-      } else if (response.data?.messages && Array.isArray(response.data.messages)) {
-        messagesData = response.data.messages;
-      }
+      const oldestMessage = messages[0];
+      const response = await chatService.getChatWithMessages(
+        selectedChat._id, 
+        30, 
+        oldestMessage.createdAt
+      );
       
-      setMessages(messagesData);
-      scrollToBottom();
+      let olderMessages = [];
+      if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
+        olderMessages = response.data.data.messages;
+      } else if (response.data?.messages && Array.isArray(response.data.messages)) {
+        olderMessages = response.data.messages;
+      }
+
+      if (olderMessages.length > 0) {
+        setMessages(prev => [...olderMessages, ...prev]);
+        
+        // Update chatMessages map
+        setChatMessages(prev => {
+          const newMap = new Map(prev);
+          const currentMsgs = newMap.get(selectedChat._id) || [];
+          newMap.set(selectedChat._id, [...olderMessages, ...currentMsgs]);
+          return newMap;
+        });
+      }
     } catch (error) {
-      console.error('Error loading messages:', error);
-      setMessages([]);
-    } finally {
-      setLoading(false);
+      console.error('Error loading more messages:', error);
     }
   };
 
@@ -867,6 +928,21 @@ const ChatPage = () => {
     }, 100);
   };
 
+  // Detect scroll to top for pagination
+  useEffect(() => {
+    const container = messageContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (container.scrollTop === 0 && messages.length > 0) {
+        loadMoreMessages();
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [messages, selectedChat]);
+
   // Start new one-on-one chat
   const handleStartNewChat = async (selectedUser) => {
     try {
@@ -874,6 +950,11 @@ const ChatPage = () => {
       const newChat = response.data.data || response.data;
       
       setChats(prev => [newChat, ...prev]);
+      setChatMessages(prev => {
+        const newMap = new Map(prev);
+        newMap.set(newChat._id, []);
+        return newMap;
+      });
       handleChatSelect(newChat);
     } catch (error) {
       console.error('Error creating chat:', error);
@@ -887,6 +968,11 @@ const ChatPage = () => {
       const newChat = response.data.data || response.data;
       
       setChats(prev => [newChat, ...prev]);
+      setChatMessages(prev => {
+        const newMap = new Map(prev);
+        newMap.set(newChat._id, []);
+        return newMap;
+      });
       handleChatSelect(newChat);
     } catch (error) {
       console.error('Error creating group chat:', error);
@@ -993,13 +1079,7 @@ const ChatPage = () => {
     }
   };
 
-  // Check if message is unread
-  const isMessageUnread = (chat) => {
-    if (!chat.latestMessage) return false;
-    return chat.latestMessage.sender?._id !== user?._id && !chat.latestMessage.isRead;
-  };
-
-  if (loading && !initialLoadComplete) {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -1088,7 +1168,6 @@ const ChatPage = () => {
               const isOnline = otherUser && isUserOnline(otherUser._id);
               const isSelected = selectedChat?._id === chat._id;
               const unreadCount = unreadMessages.get(chat._id) || 0;
-              const hasUnread = isMessageUnread(chat) || unreadCount > 0;
 
               return (
                 <button
@@ -1116,7 +1195,7 @@ const ChatPage = () => {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline justify-between mb-1">
-                        <h3 className={`${hasUnread ? 'font-bold' : 'font-semibold'} text-gray-900 truncate`}>
+                        <h3 className={`${unreadCount > 0 ? 'font-bold' : 'font-semibold'} text-gray-900 truncate`}>
                           {getChatName(chat)}
                         </h3>
                         <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
@@ -1124,7 +1203,7 @@ const ChatPage = () => {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <p className={`text-sm truncate ${hasUnread ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                        <p className={`text-sm truncate ${unreadCount > 0 ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
                           {chat.latestMessage?.message || 'No messages yet'}
                         </p>
                         {unreadCount > 0 && (
@@ -1182,11 +1261,7 @@ const ChatPage = () => {
 
             {/* Messages Area */}
             <div ref={messageContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
-              {loading ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                </div>
-              ) : messages.length === 0 ? (
+              {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
                   <MessageSquare className="w-16 h-16 mb-4 text-gray-300" />
                   <p>No messages yet</p>
@@ -1268,7 +1343,6 @@ const ChatPage = () => {
                     );
                   })}
                   
-                  {/* Typing Indicator */}
                   {typingUsers.size > 0 && getTypingText() && (
                     <div className="flex gap-3">
                       <div className="w-8 h-8"></div>

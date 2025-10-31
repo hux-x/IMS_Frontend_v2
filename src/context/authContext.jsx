@@ -15,39 +15,42 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const verifyStoredToken = async()=>{
-      setLoading(true);
-      const token = localStorage.getItem("auth_token");
+useEffect(() => {
+  const verifyStoredToken = async () => {
+    setLoading(true);
+    const token = localStorage.getItem("auth_token");
     const storedUserId = localStorage.getItem("userId");
-    if (token) {
-      try {
-        const verify_token = await client.get("/verify")
-        if(verify_token.status !== 200){
-          logout()
-          return
-        }
-        const decoded = jwtDecode(token);
-  
-        setUserRole(decoded.role);
-        setEmail(decoded.email);
-        setName(decoded.name)
-        console.log(decoded, "DECDED")
-        setUserId(storedUserId || decoded.id);
-        setIsAuthenticated(true);
-      } catch (err) {
-        console.error('Invalid token', err);
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const verify_token = await client.get("/verify");
+      if (verify_token.status !== 200) {
         logout();
-      }finally{
-        setLoading(false);
+        return;
       }
 
-    }
+      const decoded = jwtDecode(token);
+      setUserRole(decoded.role);
+      setEmail(decoded.email);
+      setName(decoded.name);
+      setUserId(storedUserId || decoded.id);
+      setIsAuthenticated(true);
 
+    } catch (err) {
+      console.error("Invalid token", err);
+      logout();
+    } finally {
+      setLoading(false); // ✅ always stop loading
     }
-    setLoading(false);
-        verifyStoredToken()
-  }, []);
+  };
+
+  verifyStoredToken();
+}, []);
+
 
   const login = (token, userId) => {
     localStorage.setItem("auth_token", token);
