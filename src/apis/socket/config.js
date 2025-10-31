@@ -9,7 +9,7 @@ export const connectSocket = (userId) => {
     return socket;
   }
 
-  socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
+  socket = io(import.meta.env.VITE_SOCKET_URL || 'https://temp.devbuns.com', {
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

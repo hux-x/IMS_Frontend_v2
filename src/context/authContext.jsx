@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const verifyStoredToken = async()=>{
+      setLoading(true);
       const token = localStorage.getItem("auth_token");
     const storedUserId = localStorage.getItem("userId");
     if (token) {
@@ -37,7 +38,10 @@ export const AuthProvider = ({ children }) => {
       } catch (err) {
         console.error('Invalid token', err);
         logout();
+      }finally{
+        setLoading(false);
       }
+
     }
 
     }

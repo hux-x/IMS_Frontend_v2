@@ -10,7 +10,8 @@ import {
   deleteEmployee,
   getAllEmployees,
   getUserInfo,
-  tokenPasswordReset
+  tokenPasswordReset,
+  changeOrAddProfilePicture
  
 } from "@/apis/endpoints/auth";
 import { storeToken } from "@/apis/localStorage/tokenStorage";
@@ -78,6 +79,7 @@ const authService = {
   },
   resetPasswordForToken: async (password, token) => {
     return await tokenPasswordReset(password, token);
-  }
+  },
+  changeorAddProfileImage: async (profileImage)=>{ return await changeOrAddProfilePicture(profileImage)}
 };
 export default authService;
