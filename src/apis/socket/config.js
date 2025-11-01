@@ -1,16 +1,15 @@
-// socketService.js - IMPROVED VERSION
+// socketService.js - FIXED VERSION
 import io from 'socket.io-client';
 
 let socket = null;
 let currentUserId = null;
 
 export const connectSocket = (userId) => {
-  // Store userId for reconnection
   currentUserId = userId;
 
   // If socket exists and is connected, just ensure setup
   if (socket?.connected) {
-    console.log('Socket already connected');
+    console.log('✅ Socket already connected');
     if (socket.userId !== userId) {
       socket.emit('setup', userId);
       socket.userId = userId;
@@ -37,13 +36,13 @@ export const connectSocket = (userId) => {
 
   // Handle connection
   socket.on('connect', () => {
-    console.log('Socket connected:', socket.id);
+    console.log('✅ Socket connected:', socket.id);
     socket.emit('setup', userId);
   });
 
   // Handle reconnection
   socket.on('reconnect', (attemptNumber) => {
-    console.log('Socket reconnected after', attemptNumber, 'attempts');
+    console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
     socket.emit('setup', userId);
   });
 
@@ -68,6 +67,7 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
     currentUserId = null;
+    console.log('🔌 Socket disconnected');
   }
 };
 
@@ -78,8 +78,12 @@ export const isSocketConnected = () => socket?.connected || false;
 const socketService = {
   // Join chat room
   joinChat: (chatId) => {
-   
+    if (!socket?.connected) {
+      console.error('❌ Socket not connected');
+      return false;
+    }
     socket.emit('join chat', chatId);
+    console.log('✅ Joining chat:', chatId);
     return true;
   },
 
@@ -87,6 +91,7 @@ const socketService = {
   leaveChat: (chatId) => {
     if (!socket?.connected) return false;
     socket.emit('leave chat', chatId);
+    console.log('👋 Leaving chat:', chatId);
     return true;
   },
 
@@ -117,6 +122,7 @@ const socketService = {
   onMessageReceived: (callback) => {
     if (!socket?.connected) return;
     socket.on('message received', callback);
+    console.log('👂 Listening for messages');
   },
 
   offMessageReceived: () => {
@@ -140,6 +146,7 @@ const socketService = {
   onUserTyping: (callback) => {
     if (!socket?.connected) return;
     socket.on('typing', callback);
+    console.log('👂 Listening for typing events');
   },
 
   offUserTyping: () => {
@@ -227,6 +234,7 @@ const socketService = {
   onUserOnline: (callback) => {
     if (!socket?.connected) return;
     socket.on('user online', callback);
+    console.log('👂 Listening for user online events');
   },
 
   offUserOnline: () => {
@@ -237,6 +245,7 @@ const socketService = {
   onUserOffline: (callback) => {
     if (!socket?.connected) return;
     socket.on('user offline', callback);
+    console.log('👂 Listening for user offline events');
   },
 
   offUserOffline: () => {
@@ -381,6 +390,7 @@ const socketService = {
     ];
 
     events.forEach(event => socket.off(event));
+    console.log('🧹 Cleaned up socket listeners');
   },
 };
 

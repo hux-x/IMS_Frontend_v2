@@ -7,24 +7,23 @@ import {
   Calendar,
   BarChart3,
   Users,
-  Shield,
   UserCircle,
   LogOut,
   Group,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useContext } from 'react';
 import { AuthContext } from '@/context/authContext';
 
 const Sidebar = ({ isOpen }) => {
   const location = useLocation();
-  const { userRole, logout } = useContext(AuthContext);
+  const { userRole, logout, unread } = useContext(AuthContext);
 
   // Define menu items with role-based access
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', roles: ['admin', 'employee'] },
     { name: 'Tasks', icon: CheckSquare, path: '/tasks', roles: ['admin'] },
-    { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'] },
+    { name: 'Chat', icon: MessageCircle, path: '/chat', roles: ['admin', 'employee'], showBadge: true },
     { name: 'Attendance', icon: Calendar, path: '/attendance', roles: ['admin'] },
     { name: 'Reports', icon: BarChart3, path: '/reports', roles: ['admin'] },
     { name: 'Teams', icon: Users, path: '/teams', roles: ['admin'] },
@@ -32,7 +31,6 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed', roles: ['admin'] },
     { name: 'Meetings', icon: Group, path: '/meetings', roles: ['admin'] },
     { name: 'Admin Panel', icon: Group, path: '/admin', roles: ['admin'] },
-
   ];
 
   // Filter menu items based on user role
@@ -54,18 +52,38 @@ const Sidebar = ({ isOpen }) => {
         <nav className="flex-1 px-2 py-4 space-y-1">
           {filteredMenuItems.map((item) => {
             const isActive = location.pathname === item.path;
+            const showUnreadBadge = item.showBadge && unread > 0;
+            
             return (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? 'bg-[#acc6aa] text-white shadow-sm'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-[#acc6aa]'
                 }`}
               >
-                <item.icon className="w-5 h-5 mr-3" />
-                {item.name}
+                <div className="flex items-center">
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {item.name}
+                </div>
+                
+                {showUnreadBadge && (
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="relative"
+                    >
+                      <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
+                        {unread > 99 ? '99+' : unread}
+                      </span>
+                      <span className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-75"></span>
+                    </motion.div>
+                  </AnimatePresence>
+                )}
               </Link>
             );
           })}

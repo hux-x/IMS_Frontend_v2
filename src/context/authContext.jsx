@@ -13,6 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [name,setName] = useState(null)
   const [email,setEmail] = useState()
   const [loading, setLoading] = useState(true);
+  const [unread, setUnread] = useState(null);
   const navigate = useNavigate();
 
 useEffect(() => {
@@ -74,7 +75,7 @@ useEffect(() => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userRole, userId, login, logout, loading,name,email }}>
+    <AuthContext.Provider value={{ isAuthenticated, userRole, userId, login, logout, loading,name,email, unread,setUnread }}>
       {children}
     </AuthContext.Provider>
   );

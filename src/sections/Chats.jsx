@@ -22,6 +22,7 @@ import {
   Trash2,
   Info
 } from 'lucide-react';
+import { ToastContainer } from '@/components/layout/Toast';
 
 // Utility function for time formatting
 const formatTime = (date) => {
@@ -314,7 +315,7 @@ const GroupChatModal = ({ isOpen, onClose, allUsers, currentUserId, onCreateGrou
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0  flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Create Group Chat</h2>
@@ -434,7 +435,7 @@ const NewChatModal = ({ isOpen, onClose, allUsers, currentUserId, onStartChat, e
     .filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="fixed inset-0  flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[70vh] flex flex-col">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Start New Chat</h2>
@@ -494,8 +495,9 @@ const NewChatModal = ({ isOpen, onClose, allUsers, currentUserId, onStartChat, e
 };
 
 const ChatPage = () => {
-  const { userId, name, email } = useContext(AuthContext);
+  const { userId, name, email,setUnread } = useContext(AuthContext);
   const user = userId ? { _id: userId, name, email } : null;
+
   
   const [chats, setChats] = useState([]);
   const [chatMessages, setChatMessages] = useState(new Map());
@@ -504,7 +506,7 @@ const ChatPage = () => {
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
-  const [typingUsers, setTypingUsers] = useState(new Set());
+  const [typingUsers, setTypingUsers] = useState(new Map());
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -513,58 +515,30 @@ const ChatPage = () => {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(new Map());
-  const [notificationPermission, setNotificationPermission] = useState('default');
+  const [toasts, setToasts] = useState([]);
+
+// Add toast helper functions:
+const addToast = (message, sender) => {
+  const id = Date.now();
+  setToasts(prev => [...prev, { id, message, sender }]);
+};
+
+const removeToast = (id) => {
+  setToasts(prev => prev.filter(toast => toast.id !== id));
+};
+
+
+  
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const typingClearTimeoutsRef = useRef(new Map()); // NEW: Track typing clear timeouts
   const messageContainerRef = useRef(null);
   const socketRef = useRef(null);
-  const audioRef = useRef(null);
+  const joinedChatsRef = useRef(new Set());
 
-  // Request notification permission on mount
-  useEffect(() => {
-    if ('Notification' in window) {
-      setNotificationPermission(Notification.permission);
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then(permission => {
-          setNotificationPermission(permission);
-        });
-      }
-    }
 
-    // Initialize audio for notifications
-    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCx+zPLTgjMGHm7A7+OZUQ0PXKPQ7ahVFApGn+DyvmwhBCx+zPLTgjMGHm7A7+OZUw8P');
-  }, []);
-
-  // Play notification sound
-  const playNotificationSound = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-    }
-  };
-
-  // Show browser notification
-  const showNotification = (title, body, chatId) => {
-    if (!('Notification' in window)) return;
-    
-    if (Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body,
-        icon: '/chat-icon.png',
-        tag: chatId,
-        requireInteraction: false
-      });
-      
-      notification.onclick = () => {
-        window.focus();
-        const chat = chats.find(c => c._id === chatId);
-        if (chat) handleChatSelect(chat);
-        notification.close();
-      };
-
-      setTimeout(() => notification.close(), 5000);
-    }
-  };
+  
 
   // Setup socket connection
   useEffect(() => {
@@ -573,299 +547,371 @@ const ChatPage = () => {
     console.log('🔌 Initializing socket for user:', userId);
     socketRef.current = connectSocket(userId);
 
-    const handleUserTyping = ({ userId: typingUserId }) => {
-      if (typingUserId !== user?._id) {
-        setTypingUsers(prev => new Set([...prev, typingUserId]));
-      }
-    };
-
-    const handleUserStopTyping = ({ userId: typingUserId }) => {
-      setTypingUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(typingUserId);
-        return newSet;
-      });
-    };
-
-    const handleUserOnline = ({ userId: onlineUserId }) => {
-      setOnlineUsers(prev => new Set([...prev, onlineUserId]));
-    };
-
-    const handleUserOffline = ({ userId: offlineUserId }) => {
-      setOnlineUsers(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(offlineUserId);
-        return newSet;
-      });
-    };
-
-    socketService.onUserTyping(handleUserTyping);
-    socketService.onUserStopTyping(handleUserStopTyping);
-    socketService.onUserOnline(handleUserOnline);
-    socketService.onUserOffline(handleUserOffline);
-
     loadInitialData();
 
+    // Request online status for all users after a short delay to ensure connection is established
+    const requestOnlineStatusTimer = setTimeout(() => {
+      console.log('🔍 Requesting online users after connection');
+      allUsers.forEach(user => {
+        if (user._id !== userId) {
+          socketService.getUserOnlineStatus(user._id);
+        }
+      });
+    }, 1000);
+
     return () => {
-      socketService.offUserTyping();
-      socketService.offUserStopTyping();
-      socketService.offUserOnline();
-      socketService.offUserOffline();
+      clearTimeout(requestOnlineStatusTimer);
+      
+      // Clear all typing timeouts
+      typingClearTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      typingClearTimeoutsRef.current.clear();
+      
+      socketService.cleanup();
       disconnectSocket();
     };
   }, [userId]);
 
-  // Load initial data - ALL chats with their messages
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load chats and users
-      const [chatsResponse, usersResponse] = await Promise.all([
-        chatService.getChats(0, 100),
-        chatService.getAllUsers()
-      ]);
+// Load initial data and request online statuses
+const loadInitialData = async () => {
+  try {
+    setLoading(true);
+    
+    const [chatsResponse, usersResponse] = await Promise.all([
+      chatService.getChats(0, 100),
+      chatService.getAllUsers()
+    ]);
 
-      const chatsData = Array.isArray(chatsResponse.data) ? chatsResponse.data : chatsResponse.data?.data || [];
-      setChats(chatsData);
-      setAllUsers(usersResponse.data.employees || []);
+    const chatsData = Array.isArray(chatsResponse.data) ? chatsResponse.data : chatsResponse.data?.data || [];
+    setChats(chatsData);
+    
+    const usersData = usersResponse.data.employees || [];
+    setAllUsers(usersData);
 
-      // Load messages for ALL chats in parallel
-      const messagesMap = new Map();
-      const unreadMap = new Map();
+    const messagesMap = new Map();
+    const unreadMap = new Map();
 
-      await Promise.all(
-        chatsData.map(async (chat) => {
-          try {
-            const response = await chatService.getChatWithMessages(chat._id, 30);
-            let messagesData = [];
-            
-            if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
-              messagesData = response.data.data.messages;
-            } else if (response.data?.messages && Array.isArray(response.data.messages)) {
-              messagesData = response.data.messages;
-            }
-            
-            messagesMap.set(chat._id, messagesData);
-            
-            // Count unread messages
-            const unread = messagesData.filter(m => 
-              m.sender._id !== user?._id && !m.isRead
-            ).length;
-            
-            if (unread > 0) {
-              unreadMap.set(chat._id, unread);
-            }
-          } catch (error) {
-            console.error('Error loading messages for chat:', chat._id, error);
-            messagesMap.set(chat._id, []);
+    await Promise.all(
+      chatsData.map(async (chat) => {
+        try {
+          const response = await chatService.getChatWithMessages(chat._id, 30);
+          let messagesData = [];
+          
+          if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
+            messagesData = response.data.data.messages;
+          } else if (response.data?.messages && Array.isArray(response.data.messages)) {
+            messagesData = response.data.messages;
           }
-        })
-      );
+          
+          messagesMap.set(chat._id, messagesData);
+          
+          // ✅ Count unread messages properly
+          const unread = messagesData.filter(m => 
+            m.sender._id !== user?._id && !m.isRead
+          ).length;
+          
+          if (unread > 0) {
+            unreadMap.set(chat._id, unread);
+          }
+        } catch (error) {
+          console.error('Error loading messages for chat:', chat._id, error);
+          messagesMap.set(chat._id, []);
+        }
+      })
+    );
 
-      setChatMessages(messagesMap);
-      setUnreadMessages(unreadMap);
+    setChatMessages(messagesMap);
+    setUnreadMessages(unreadMap);
+    const totalUnread = Array.from(unreadMap.values()).reduce((acc, val) => acc + val, 0);
+    setUnread
+    
+    console.log('✅ Loaded messages for', messagesMap.size, 'chats');
+    console.log('📬 Total unread chats:', unreadMap.size);
+    
+    // ✅ Request online status for all users after a short delay
+    setTimeout(() => {
+      console.log('🔍 Requesting online status for', usersData.length, 'users');
+      usersData.forEach(userData => {
+        if (userData._id !== user?._id) {
+          socketService.getUserOnlineStatus(userData._id);
+        }
+      });
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Error loading initial data:', error);
+    setChats([]);
+    setAllUsers([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+  // Join ALL chat rooms when chats are loaded
+  useEffect(() => {
+    if (!socketRef.current || chats.length === 0) return;
+
+    chats.forEach(chat => {
+      if (!joinedChatsRef.current.has(chat._id)) {
+        socketService.joinChat(chat._id);
+        joinedChatsRef.current.add(chat._id);
+        console.log('✅ Joined chat room:', chat._id);
+      }
+    });
+  }, [chats]);
+// Setup socket listeners
+useEffect(() => {
+  if (!socketRef.current || !userId) return;
+const handleNewMessage = (message) => {
+  console.log('💬 Message received:', message);
+  
+  // Normalize chat ID
+  let messageChatId;
+  if (typeof message.chat === 'object' && message.chat !== null) {
+    messageChatId = message.chat._id?.toString() || message.chat.toString();
+  } else {
+    messageChatId = message.chat?.toString();
+  }
+  
+  const selectedChatId = selectedChat?._id?.toString();
+  const isCurrentChat = selectedChatId && messageChatId === selectedChatId;
+  
+  // Update chatMessages Map
+  setChatMessages(prev => {
+    const newMap = new Map(prev);
+    const chatMsgs = newMap.get(messageChatId) || [];
+    
+    const exists = chatMsgs.some(m => m._id === message._id);
+    if (!exists) {
+      newMap.set(messageChatId, [...chatMsgs, message]);
+    }
+    
+    return newMap;
+  });
+
+  if (isCurrentChat) {
+    setMessages(prev => {
+      const exists = prev.some(m => m._id === message._id);
+      if (exists) return prev;
+      return [...prev, message];
+    });
+    
+    setTimeout(() => scrollToBottom(), 100);
+
+    if (message.sender._id !== user?._id) {
+      socketService.markMessageAsRead(message._id, user._id);
+    }
+  } else {
+    // ✅ Update unread count AND show toast
+    if (message.sender._id !== user?._id) {
+      console.log('📬 Incrementing unread count for chat:', messageChatId);
       
-      console.log('✅ Loaded messages for', messagesMap.size, 'chats');
-    } catch (error) {
-      console.error('Error loading initial data:', error);
-      setChats([]);
-      setAllUsers([]);
-    } finally {
-      setLoading(false);
+      setUnreadMessages(prev => {
+        const newMap = new Map(prev);
+        const current = newMap.get(messageChatId) || 0;
+        newMap.set(messageChatId, current + 1);
+        
+        // Update global unread count
+        const totalUnread = Array.from(newMap.values()).reduce((acc, val) => acc + val, 0);
+        setUnread(totalUnread);
+        
+        return newMap;
+      });
+      
+      // 🔔 Show toast notification
+      addToast(message.message, message.sender.name);
+      
+      // 🔊 Play notification sound (optional)
+      try {
+        const audio = new Audio('/notification.mp3'); // Add a notification sound file to your public folder
+        audio.volume = 0.5;
+        audio.play().catch(e => console.log('Audio play failed:', e));
+      } catch (error) {
+        console.log('Notification sound error:', error);
+      }
+    }
+  }
+};
+
+  const handleUserTyping = ({ userId: typingUserId, chatId }) => {
+    if (typingUserId !== user?._id) {
+      console.log('⌨️ User typing:', typingUserId, 'in chat:', chatId);
+      
+      setTypingUsers(prev => {
+        const newMap = new Map(prev);
+        const chatTypers = newMap.get(chatId) || new Set();
+        chatTypers.add(typingUserId);
+        newMap.set(chatId, chatTypers);
+        return newMap;
+      });
+      
+      // Clear existing timeout for this user in this chat
+      const timeoutKey = `${chatId}-${typingUserId}`;
+      if (typingClearTimeoutsRef.current.has(timeoutKey)) {
+        clearTimeout(typingClearTimeoutsRef.current.get(timeoutKey));
+      }
+      
+      // Set new timeout to clear typing after 2 seconds
+      const timeout = setTimeout(() => {
+        console.log('⏱️ Clearing typing for user:', typingUserId);
+        setTypingUsers(prev => {
+          const newMap = new Map(prev);
+          const chatTypers = newMap.get(chatId);
+          if (chatTypers) {
+            chatTypers.delete(typingUserId);
+            if (chatTypers.size === 0) {
+              newMap.delete(chatId);
+            } else {
+              newMap.set(chatId, chatTypers);
+            }
+          }
+          return newMap;
+        });
+        typingClearTimeoutsRef.current.delete(timeoutKey);
+      }, 2000);
+      
+      typingClearTimeoutsRef.current.set(timeoutKey, timeout);
     }
   };
 
-  // Setup GLOBAL message listener (not just for selected chat)
-  useEffect(() => {
-    if (!socketRef.current || !userId) return;
-
-    const handleNewMessage = (message) => {
-      console.log('💬 Message received:', message);
-      
-      // Update chatMessages map
-      setChatMessages(prev => {
-        const newMap = new Map(prev);
-        const chatMsgs = newMap.get(message.chat) || [];
-        
-        // Check if message already exists
-        const exists = chatMsgs.some(m => m._id === message._id);
-        if (!exists) {
-          newMap.set(message.chat, [...chatMsgs, message]);
-        }
-        
-        return newMap;
-      });
-
-      // Update selected chat messages if applicable
-      if (selectedChat && message.chat === selectedChat._id) {
-        setMessages(prev => {
-          const exists = prev.some(m => m._id === message._id);
-          if (exists) return prev;
-          return [...prev, message];
-        });
-        scrollToBottom();
-
-        // Mark as read if not from current user
-        if (message.sender._id !== user?._id) {
-          socketService.markMessageAsRead(message._id, user._id);
-        }
-      } else {
-        // Update unread count for other chats
-        if (message.sender._id !== user?._id) {
-          setUnreadMessages(prev => {
-            const newMap = new Map(prev);
-            const current = newMap.get(message.chat) || 0;
-            newMap.set(message.chat, current + 1);
-            return newMap;
-          });
-          
-          // Show notification and play sound
-          playNotificationSound();
-          const senderName = message.sender?.name || 'Someone';
-          showNotification(
-            senderName,
-            message.message,
-            message.chat
-          );
-        }
-      }
-
-      // Update chat list - move chat to top and update latest message
-      setChats(prev => {
-        const chatExists = prev.some(c => c._id === message.chat);
-        
-        if (!chatExists) {
-          // New chat created
-          const newChat = {
-            _id: message.chat,
-            latestMessage: message,
-            users: [message.sender, user],
-            isGroupChat: false,
-            createdAt: message.createdAt
-          };
-          return [newChat, ...prev];
-        }
-        
-        const updatedChats = prev.map(chat => 
-          chat._id === message.chat 
-            ? { ...chat, latestMessage: message }
-            : chat
-        );
-        
-        // Move updated chat to top
-        const chatIndex = updatedChats.findIndex(c => c._id === message.chat);
-        if (chatIndex > 0) {
-          const [updatedChat] = updatedChats.splice(chatIndex, 1);
-          updatedChats.unshift(updatedChat);
-        }
-        
-        return updatedChats;
-      });
-    };
-
-    const handleMessageRead = ({ messageId }) => {
-      // Update in chatMessages map
-      setChatMessages(prev => {
-        const newMap = new Map(prev);
-        for (const [chatId, msgs] of newMap.entries()) {
-          const updated = msgs.map(m => 
-            m._id === messageId ? { ...m, isRead: true } : m
-          );
-          newMap.set(chatId, updated);
-        }
-        return newMap;
-      });
-
-      // Update selected chat messages
-      setMessages(prev => prev.map(msg => 
-        msg._id === messageId ? { ...msg, isRead: true } : msg
-      ));
-    };
-
-    socketService.onMessageReceived(handleNewMessage);
-    socketService.onMessageRead(handleMessageRead);
-
-    return () => {
-      socketService.offMessageReceived();
-      socketService.offMessageRead();
-    };
-  }, [selectedChat, userId, user, chats]);
-
-  // Join/leave chat rooms
-  useEffect(() => {
-    if (!selectedChat || !socketRef.current) return;
-
-    socketService.joinChat(selectedChat._id);
-
-    return () => {
-      if (selectedChat) {
-        socketService.leaveChat(selectedChat._id);
-      }
-    };
-  }, [selectedChat]);
-
-  // Handle chat selection
-  const handleChatSelect = async (chat) => {
-    if (selectedChat?._id === chat._id) return;
-
-    setSelectedChat(chat);
-
-    // Clear unread count for this chat
-    setUnreadMessages(prev => {
+  const handleUserStopTyping = ({ userId: typingUserId, chatId }) => {
+    console.log('🛑 User stopped typing:', typingUserId);
+    
+    // Clear any pending timeout
+    const timeoutKey = `${chatId}-${typingUserId}`;
+    if (typingClearTimeoutsRef.current.has(timeoutKey)) {
+      clearTimeout(typingClearTimeoutsRef.current.get(timeoutKey));
+      typingClearTimeoutsRef.current.delete(timeoutKey);
+    }
+    
+    setTypingUsers(prev => {
       const newMap = new Map(prev);
-      newMap.delete(chat._id);
+      const chatTypers = newMap.get(chatId);
+      if (chatTypers) {
+        chatTypers.delete(typingUserId);
+        if (chatTypers.size === 0) {
+          newMap.delete(chatId);
+        } else {
+          newMap.set(chatId, chatTypers);
+        }
+      }
+      return newMap;
+    });
+  };
+
+  // ✅ FIXED: Handle initial online users list
+  const handleInitialOnlineUsers = ({ users }) => {
+    console.log('👥 Received initial online users:', users.length);
+    setOnlineUsers(new Set(users));
+  };
+
+  const handleUserOnline = ({ userId: onlineUserId }) => {
+    console.log('✅ User came online:', onlineUserId);
+    setOnlineUsers(prev => {
+      const newSet = new Set(prev);
+      newSet.add(onlineUserId);
+      console.log('👥 Total online users:', newSet.size);
+      return newSet;
+    });
+  };
+
+  const handleUserOffline = ({ userId: offlineUserId }) => {
+    console.log('❌ User went offline:', offlineUserId);
+    setOnlineUsers(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(offlineUserId);
+      console.log('👥 Total online users:', newSet.size);
+      return newSet;
+    });
+  };
+
+  // ✅ FIXED: Handle user online status response
+  const handleUserOnlineStatus = ({ userId: statusUserId, isOnline }) => {
+    console.log(`🔍 User status: ${statusUserId} is ${isOnline ? 'online' : 'offline'}`);
+    if (isOnline) {
+      setOnlineUsers(prev => new Set([...prev, statusUserId]));
+    } else {
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(statusUserId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleMessageRead = ({ messageId }) => {
+    console.log('✅ Message read:', messageId);
+    setChatMessages(prev => {
+      const newMap = new Map(prev);
+      for (const [chatId, msgs] of newMap.entries()) {
+        const updated = msgs.map(m => 
+          m._id === messageId ? { ...m, isRead: true } : m
+        );
+        newMap.set(chatId, updated);
+      }
       return newMap;
     });
 
-    // Use cached messages from chatMessages map
-    const cachedMessages = chatMessages.get(chat._id) || [];
-    setMessages(cachedMessages);
-    
-    // Mark unread messages as read
-    cachedMessages.forEach(msg => {
-      if (msg.sender._id !== user?._id && !msg.isRead) {
-        socketService.markMessageAsRead(msg._id, user._id);
-      }
-    });
-
-    scrollToBottom();
+    setMessages(prev => prev.map(msg => 
+      msg._id === messageId ? { ...msg, isRead: true } : msg
+    ));
   };
 
-  // Load more messages (pagination)
-  const loadMoreMessages = async () => {
-    if (!selectedChat || messages.length === 0) return;
+  // ✅ Register all listeners
+  socketService.onMessageReceived(handleNewMessage);
+  socketService.onUserTyping(handleUserTyping);
+  socketService.onUserStopTyping(handleUserStopTyping);
+  socketService.onUserOnline(handleUserOnline);
+  socketService.onUserOffline(handleUserOffline);
+  socketService.onMessageRead(handleMessageRead);
 
-    try {
-      const oldestMessage = messages[0];
-      const response = await chatService.getChatWithMessages(
-        selectedChat._id, 
-        30, 
-        oldestMessage.createdAt
-      );
-      
-      let olderMessages = [];
-      if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
-        olderMessages = response.data.data.messages;
-      } else if (response.data?.messages && Array.isArray(response.data.messages)) {
-        olderMessages = response.data.messages;
-      }
+  // ✅ NEW: Listen for initial online users and online status responses
+  if (socketRef.current) {
+    socketRef.current.on('initial online users', handleInitialOnlineUsers);
+    socketRef.current.on('user online status', handleUserOnlineStatus);
+  }
 
-      if (olderMessages.length > 0) {
-        setMessages(prev => [...olderMessages, ...prev]);
-        
-        // Update chatMessages map
-        setChatMessages(prev => {
-          const newMap = new Map(prev);
-          const currentMsgs = newMap.get(selectedChat._id) || [];
-          newMap.set(selectedChat._id, [...olderMessages, ...currentMsgs]);
-          return newMap;
-        });
-      }
-    } catch (error) {
-      console.error('Error loading more messages:', error);
+  return () => {
+    socketService.offMessageReceived();
+    socketService.offUserTyping();
+    socketService.offUserStopTyping();
+    socketService.offUserOnline();
+    socketService.offUserOffline();
+    socketService.offMessageRead();
+    
+    if (socketRef.current) {
+      socketRef.current.off('initial online users', handleInitialOnlineUsers);
+      socketRef.current.off('user online status', handleUserOnlineStatus);
     }
   };
+}, [selectedChat, userId, user]);
+
+  // Handle chat selection
+
+const handleChatSelect = async (chat) => {
+  if (selectedChat?._id === chat._id) return;
+
+  setSelectedChat(chat);
+
+  // ✅ Clear unread count for this chat
+  setUnreadMessages(prev => {
+    const newMap = new Map(prev);
+    newMap.delete(chat._id);
+    return newMap;
+  });
+
+  const cachedMessages = chatMessages.get(chat._id) || [];
+  setMessages(cachedMessages);
+  
+  // ✅ Mark ALL unread messages as read when opening the chat
+  cachedMessages.forEach(msg => {
+    if (msg.sender._id !== user?._id && !msg.isRead) {
+      console.log('✅ Marking message as read on chat open:', msg._id);
+      socketService.markMessageAsRead(msg._id, user._id);
+    }
+  });
+
+  setTimeout(() => scrollToBottom(), 100);
+};
 
   // Send message
   const handleSendMessage = () => {
@@ -885,6 +931,12 @@ const ChatPage = () => {
     setMessageInput('');
     setReplyingTo(null);
     socketService.sendStopTyping(selectedChat._id, user._id);
+    
+    // Clear typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
     setSendingMessage(false);
   };
 
@@ -923,27 +975,10 @@ const ChatPage = () => {
 
   // Scroll to bottom
   const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Detect scroll to top for pagination
-  useEffect(() => {
-    const container = messageContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      if (container.scrollTop === 0 && messages.length > 0) {
-        loadMoreMessages();
-      }
-    };
-
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [messages, selectedChat]);
-
-  // Start new one-on-one chat
+  // Start new chat
   const handleStartNewChat = async (selectedUser) => {
     try {
       const response = await chatService.postChat(selectedUser._id);
@@ -955,6 +990,10 @@ const ChatPage = () => {
         newMap.set(newChat._id, []);
         return newMap;
       });
+      
+      socketService.joinChat(newChat._id);
+      joinedChatsRef.current.add(newChat._id);
+      
       handleChatSelect(newChat);
     } catch (error) {
       console.error('Error creating chat:', error);
@@ -973,6 +1012,10 @@ const ChatPage = () => {
         newMap.set(newChat._id, []);
         return newMap;
       });
+      
+      socketService.joinChat(newChat._id);
+      joinedChatsRef.current.add(newChat._id);
+      
       handleChatSelect(newChat);
     } catch (error) {
       console.error('Error creating group chat:', error);
@@ -1028,7 +1071,7 @@ const ChatPage = () => {
     }
   };
 
-  // Get other user in one-on-one chat
+  // Get other user
   const getOtherUser = (chat) => {
     if (!chat || chat.isGroupChat) return null;
     if (!chat.users || !Array.isArray(chat.users)) return null;
@@ -1037,7 +1080,7 @@ const ChatPage = () => {
 
   // Check if user is online
   const isUserOnline = (userId) => {
-    return onlineUsers.has(userId);
+    return userId ? onlineUsers.has(userId) : false;
   };
 
   // Get chat name
@@ -1061,11 +1104,14 @@ const ChatPage = () => {
 
   // Get typing indicator text
   const getTypingText = () => {
-    if (!selectedChat || typingUsers.size === 0) return '';
+    if (!selectedChat) return '';
+    
+    const chatTypers = typingUsers.get(selectedChat._id);
+    if (!chatTypers || chatTypers.size === 0) return '';
     
     if (selectedChat.isGroupChat) {
       const typingUserNames = selectedChat.users
-        ?.filter(u => u && u._id && typingUsers.has(u._id) && u._id !== user?._id)
+        ?.filter(u => u && u._id && chatTypers.has(u._id) && u._id !== user?._id)
         .map(u => u.name)
         .slice(0, 2);
       
@@ -1075,7 +1121,7 @@ const ChatPage = () => {
     } else {
       const otherUser = getOtherUser(selectedChat);
       if (!otherUser || !otherUser._id) return '';
-      return typingUsers.has(otherUser._id) ? 'typing...' : '';
+      return chatTypers.has(otherUser._id) ? 'typing...' : '';
     }
   };
 
@@ -1092,7 +1138,6 @@ const ChatPage = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Modals */}
       <GroupChatModal
         isOpen={showGroupModal}
         onClose={() => setShowGroupModal(false)}
@@ -1121,7 +1166,7 @@ const ChatPage = () => {
         onRemoveMember={handleRemoveMember}
       />
 
-      {/* Sidebar - Chat List */}
+      {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
@@ -1343,7 +1388,7 @@ const ChatPage = () => {
                     );
                   })}
                   
-                  {typingUsers.size > 0 && getTypingText() && (
+                  {getTypingText() && (
                     <div className="flex gap-3">
                       <div className="w-8 h-8"></div>
                       <TypingIndicator />
@@ -1461,6 +1506,7 @@ const ChatPage = () => {
           background: #555;
         }
       `}</style>
+     <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 };
