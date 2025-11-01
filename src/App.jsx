@@ -31,10 +31,10 @@ const PrivateRoute = ({ children, allowedRoles }) => {
   });
   if (loading) return <div>Loading...</div>;
   if (!isAuthenticated) return <Navigate to="/login" />;
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (true) {
     return <Navigate to="/dashboard" />;
   }
-  return children;
+  
 };
 
 // 👇 New PublicRoute
