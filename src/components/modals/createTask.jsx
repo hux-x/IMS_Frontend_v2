@@ -40,6 +40,18 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
     getAssignees();
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showAssigneeDropdown && !event.target.closest('.assignee-dropdown-container')) {
+        setShowAssigneeDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showAssigneeDropdown]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setTaskData((prev) => ({ ...prev, [name]: value }));
@@ -373,7 +385,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Assignees
                 </label>
-                <div className="relative">
+                <div className="relative assignee-dropdown-container">
                   <button
                     type="button"
                     onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
@@ -387,7 +399,7 @@ const CreateTask = ({ onClose, onCreate, isOpen }) => {
 
                   {/* Dropdown */}
                   {showAssigneeDropdown && taskData.teamId && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-10">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
                       {selectedTeam?.members?.map((member) => (
                         <label
                           key={member._id}
