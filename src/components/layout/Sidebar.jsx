@@ -29,7 +29,7 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Teams', icon: Users, path: '/teams', roles: ['admin','executive'] },
     { name: 'Employees', icon: UserCircle, path: '/employees', roles: ['admin','executive'] },
     { name: 'Project Proposed', icon: UserCircle, path: '/projectproposed', roles: ['admin','executive'] },
-    { name: 'Meetings', icon: Group, path: '/meetings', roles: ['admin','executive','employee'] },
+    { name: 'Meetings', icon: Group, path: '/meetings', roles: ['admin','executive',] },
     { name: 'Admin Panel', icon: Group, path: '/admin', roles: ['admin','executive'] },
   ];
 

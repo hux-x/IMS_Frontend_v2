@@ -19,7 +19,7 @@ import {
   Eye
 } from "lucide-react";
 import TaskCard from "@/components/cards/TaskCard";
-import TeamCard from "@/components/cards/TeamCard";
+import TeamCard from "@/components/cards/EmployeeTeamCard";
 import useDashboard from "@/hooks/useDashboard";
 import useTasks from "@/hooks/useTask";
 import { useContext, useState } from "react";
