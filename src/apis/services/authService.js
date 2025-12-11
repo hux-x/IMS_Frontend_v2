@@ -3,7 +3,7 @@ import {
   registerEmployee,
   login,
   updateEmployeeInfo,
-  getEmployees,
+  getEmployees as getEmployeesx,
   getFilteredEmployees,
   resetPassword,
   forgotPassword,
@@ -11,7 +11,7 @@ import {
   getAllEmployees,
   getUserInfo,
   tokenPasswordReset,
-  changeOrAddProfilePicture
+  changeOrAddProfilePicture,
  
 } from "@/apis/endpoints/auth";
 import { storeToken } from "@/apis/localStorage/tokenStorage";
@@ -43,7 +43,7 @@ const authService = {
     return await updateEmployeeInfo(id, updates);
   },
   getEmployees: async (limit, offset) => {
-    return await getEmployees(limit, offset);
+    return await getEmployeesx(limit, offset);
   },
   getFilteredEmployees: async (
     limit,
@@ -80,6 +80,7 @@ const authService = {
   resetPasswordForToken: async (password, token) => {
     return await tokenPasswordReset(password, token);
   },
-  changeorAddProfileImage: async (profileImage)=>{ return await changeOrAddProfilePicture(profileImage)}
+  
+  
 };
 export default authService;

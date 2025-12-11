@@ -1,9 +1,7 @@
 // src/components/team/TeamDetailsModal.jsx
 import React, { useState, useEffect } from 'react';
-import { FaTimes, FaEdit, FaTrash, FaCrown, FaUsers, FaEnvelope, FaInfoCircle, FaLink, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaTimes, FaEdit, FaTrash, FaCrown, FaUsers, FaInfoCircle, FaExternalLinkAlt, FaFolder } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
-
-const teamColors = ['#4A90E2', '#7ED321', '#9013FE', '#F5A623', '#D0021B', '#50E3C2'];
 
 const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDeleteTeam }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -13,7 +11,6 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
         if (team) {
             setEditedTeam({
                 ...team,
-                // Ensure we have the correct structure for editing
                 lead: {
                     id: team.lead?.id || team.lead?._id,
                     name: team.lead?.name,
@@ -48,7 +45,6 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                 ? currentMemberIds.filter(id => id !== userId)
                 : [...currentMemberIds, userId];
             
-            // Map back to full user objects
             const updatedMembers = allUsers.filter(user => 
                 newMemberIds.includes(user.id || user._id)
             );
@@ -73,7 +69,6 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
             return;
         }
 
-        // Prepare data for API call
         const updateData = {
             id: editedTeam.id,
             name: editedTeam.name.trim(),
@@ -84,10 +79,6 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
 
         onUpdateTeam(updateData);
         setIsEditing(false);
-    };
-
-    const handleTeamColorChange = (color) => {
-        setEditedTeam(prev => ({ ...prev, color }));
     };
 
     const handleLeadChange = (e) => {
@@ -214,45 +205,25 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="editTeamLead" className="block text-sm font-medium text-gray-700 mb-1">
-                        Team Lead <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                        id="editTeamLead"
-                        name="lead"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editedTeam.lead?.id || ''}
-                        onChange={handleLeadChange}
-                        required
-                    >
-                        <option value="">Select Team Lead</option>
-                        {allUsers.map(user => (
-                            <option key={user.id || user._id} value={user.id || user._id}>
-                                {user.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Team Color</label>
-                    <div className="flex items-center space-x-2 h-10">
-                        {teamColors.map((color) => (
-                            <button
-                                key={color}
-                                type="button"
-                                className={`w-8 h-8 rounded-full border-2 ${
-                                    editedTeam.color === color 
-                                        ? 'border-blue-500' 
-                                        : 'border-gray-200'
-                                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition duration-150 ease-in-out`}
-                                style={{ backgroundColor: color }}
-                                onClick={() => handleTeamColorChange(color)}
-                            />
-                        ))}
-                    </div>
-                </div>
+            <div>
+                <label htmlFor="editTeamLead" className="block text-sm font-medium text-gray-700 mb-1">
+                    Team Lead <span className="text-red-500">*</span>
+                </label>
+                <select
+                    id="editTeamLead"
+                    name="lead"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editedTeam.lead?.id || ''}
+                    onChange={handleLeadChange}
+                    required
+                >
+                    <option value="">Select Team Lead</option>
+                    {allUsers.map(user => (
+                        <option key={user.id || user._id} value={user.id || user._id}>
+                            {user.name}
+                        </option>
+                    ))}
+                </select>
             </div>
 
             <div>
@@ -329,12 +300,19 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                                 <FaEdit />
                                 <span>Edit</span>
                             </button>
-                             <Link 
+                            <Link 
                                 to={`/teamdashboard/${team.id}`}
-                                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition duration-200 ease-in-out"
+                                className="flex items-center space-x-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition duration-200 ease-in-out"
                             >
                                 <FaExternalLinkAlt />
                                 <span>Dashboard</span>
+                            </Link>
+                            <Link 
+                                to={`/repos/${team.id}`}
+                                className="flex items-center space-x-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition duration-200 ease-in-out"
+                            >
+                                <FaFolder />
+                                <span>Repositories</span>
                             </Link>
                            </>
                         ) : (

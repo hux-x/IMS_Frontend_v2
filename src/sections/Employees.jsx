@@ -20,7 +20,8 @@ export default function EmployeeList() {
     error, 
     getEmployees, 
     addEmployee,
-    updateEmployee 
+    updateEmployee,
+    deleteEmployee //takes in the _id of the employee to be deleted => async function deleteEmployee(id) => remvoes from the states
   } = useAuth();
 
   useEffect(() => {
@@ -205,6 +206,7 @@ export default function EmployeeList() {
               loading={loading}
               mode={modalMode}
               employeeData={selectedEmployee}
+              deleteEmployee={deleteEmployee}
             />
           </div>
         </div>

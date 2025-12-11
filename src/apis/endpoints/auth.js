@@ -133,6 +133,7 @@ export const getAllEmployees = async () => {
   return await client.get("/employees/all");
 };
 
+
 export const resetPassword = async (password, candidatePassword) => {
   return await client.post("/employees/reset-password", {
     password,
@@ -145,7 +146,7 @@ export const forgotPassword = async (email) => {
 };
 
 export const deleteEmployee = async (id) => {
-  return await client.delete(`/employees/delete/${id}`);
+  return await client.delete(`/employees/permanently-delete/${id}`);
 };
 
 export const getUserInfo = async () => {

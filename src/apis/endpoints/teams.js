@@ -1,8 +1,7 @@
 import client from "@/apis/apiClient/client";
 
 export const createTeam = async (name, members, teamLeadId) => {
-  const body = { name, members };
-  if (teamLeadId) body.teamLeadId = teamLeadId;
+  const body = { name, members,teamLeadId };
   return await client.post("/teams/createteam", body);
 };
 

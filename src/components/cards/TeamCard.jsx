@@ -7,6 +7,7 @@ const TeamCard = ({ team, onClick }) => {
     const getInitials = (name) => {
         return name.split(' ').map(n => n[0]).join('').toUpperCase();
     };
+    console.log(team, "TEAM DATA IN CARDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd");
     const membersArray = Array.isArray(team.members) ? team.members : [];
     const membersToShow = membersArray.slice(0, 3);
     const remainingMembers = membersArray.length - membersToShow.length;
@@ -46,7 +47,7 @@ const TeamCard = ({ team, onClick }) => {
 
             <div className="flex items-center text-gray-700 text-sm mb-2">
                 <FaCrown className="mr-2 text-yellow-500" />
-                <span>Lead: {team.lead ? team.lead.name : team.teamLead.name}</span>
+                <span>Lead: {team.lead.name ? team.lead.name : "N/A"}</span>
             </div>
 
             <div className="flex items-center text-gray-700 text-sm mb-4">

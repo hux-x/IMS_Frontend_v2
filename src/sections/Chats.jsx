@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import socketService, { connectSocket, disconnectSocket } from '@/apis/socket/config';
 import chatService from '@/apis/services/chatService';
@@ -12,17 +13,19 @@ import {
   Check, 
   CheckCheck,
   Reply,
-  MoreVertical,
   UserPlus,
   Loader2,
-  Bell,
-  Settings,
-  Edit2,
-  UserMinus,
-  Trash2,
-  Info
+  Info,
+  FolderOpen,
+  FileText,
+  Download
 } from 'lucide-react';
 import { ToastContainer } from '@/components/layout/Toast';
+import GroupInfoModal from '@/components/modals/GroupChatModal';
+import GroupChatModal from '@/components/modals/GroupChatModal';
+import NewChatModal from '@/components/modals/NewChatModal';
+import UploadFilesModal from '@/components/modals/UploadFileModal';
+import UploadProgressToast from '@/components/ui/UploadProgressToast';
 
 // Utility function for time formatting
 const formatTime = (date) => {
@@ -40,6 +43,12 @@ const formatTime = (date) => {
   return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+const formatFileSize = (bytes) => {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+};
+
 // Typing Indicator Component
 const TypingIndicator = () => (
   <div className="flex items-center gap-1 px-4 py-2">
@@ -51,454 +60,14 @@ const TypingIndicator = () => (
   </div>
 );
 
-// Group Info Modal Component
-const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpdateGroup, onRemoveMember, onAddMember }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [groupName, setGroupName] = useState(chat?.chatName || '');
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [updating, setUpdating] = useState(false);
-
-  useEffect(() => {
-    if (chat) {
-      setGroupName(chat.chatName || '');
-    }
-  }, [chat]);
-
-  if (!isOpen || !chat) return null;
-
-  const isAdmin = chat.groupAdmin?._id === currentUserId;
-  const availableUsers = allUsers.filter(u => 
-    !chat.users.find(cu => cu._id === u._id) && u._id !== currentUserId
-  ).filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  const handleUpdateName = async () => {
-    if (!groupName.trim() || groupName === chat.chatName) {
-      setIsEditing(false);
-      return;
-    }
-
-    setUpdating(true);
-    try {
-      await onUpdateGroup(chat._id, groupName);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating group name:', error);
-      alert('Failed to update group name');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleAddMember = async (userId) => {
-    setUpdating(true);
-    try {
-      await onAddMember(chat._id, userId);
-      setShowAddMember(false);
-      setSearchQuery('');
-    } catch (error) {
-      console.error('Error adding member:', error);
-      alert('Failed to add member');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const handleRemoveMember = async (userId) => {
-    if (!confirm('Remove this member from the group?')) return;
-    
-    setUpdating(true);
-    try {
-      await onRemoveMember(chat._id, userId);
-    } catch (error) {
-      console.error('Error removing member:', error);
-      alert('Failed to remove member');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Group Info</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="p-6 border-b border-gray-200 flex flex-col items-center">
-          <div className="w-20 h-20 rounded-full bg-purple-500 flex items-center justify-center text-white mb-3">
-            <Users className="w-10 h-10" />
-          </div>
-          
-          {isEditing ? (
-            <div className="flex items-center gap-2 w-full max-w-xs">
-              <input
-                type="text"
-                value={groupName}
-                onChange={(e) => setGroupName(e.target.value)}
-                className="flex-1 px-3 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                autoFocus
-              />
-              <button
-                onClick={handleUpdateName}
-                disabled={updating}
-                className="p-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-              >
-                <Check className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setGroupName(chat.chatName);
-                }}
-                className="p-1 hover:bg-gray-100 rounded-lg"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <h3 className="text-xl font-semibold text-gray-900">{chat.chatName}</h3>
-              {isAdmin && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-4 h-4 text-gray-600" />
-                </button>
-              )}
-            </div>
-          )}
-          
-          <p className="text-sm text-gray-500 mt-1">
-            {chat.users?.length || 0} members
-          </p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-gray-700">Members</h4>
-              {isAdmin && (
-                <button
-                  onClick={() => setShowAddMember(!showAddMember)}
-                  className="text-sm text-blue-500 hover:text-blue-600 flex items-center gap-1"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Add Member
-                </button>
-              )}
-            </div>
-
-            {showAddMember && isAdmin && (
-              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                />
-                <div className="max-h-40 overflow-y-auto space-y-1">
-                  {availableUsers.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-2">No users found</p>
-                  ) : (
-                    availableUsers.map(user => (
-                      <button
-                        key={user._id}
-                        onClick={() => handleAddMember(user._id)}
-                        disabled={updating}
-                        className="w-full flex items-center gap-2 p-2 hover:bg-white rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                          {user.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="text-sm text-gray-900">{user.name}</span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {chat.users?.map(member => {
-                const isMemberAdmin = member._id === chat.groupAdmin?._id;
-                const isCurrentUser = member._id === currentUserId;
-                
-                return (
-                  <div
-                    key={member._id}
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                        {member.name?.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {member.name} {isCurrentUser && '(You)'}
-                        </p>
-                        {isMemberAdmin && (
-                          <p className="text-xs text-blue-600">Group Admin</p>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {isAdmin && !isCurrentUser && !isMemberAdmin && (
-                      <button
-                        onClick={() => handleRemoveMember(member._id)}
-                        disabled={updating}
-                        className="p-1 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        <UserMinus className="w-4 h-4 text-red-600" />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Group Chat Modal Component
-const GroupChatModal = ({ isOpen, onClose, allUsers, currentUserId, onCreateGroup }) => {
-  const [groupName, setGroupName] = useState('');
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [creating, setCreating] = useState(false);
-
-  const toggleUserSelection = (user) => {
-    setSelectedUsers(prev => {
-      const exists = prev.find(u => u._id === user._id);
-      if (exists) {
-        return prev.filter(u => u._id !== user._id);
-      }
-      return [...prev, user];
-    });
-  };
-
-  const handleCreate = async () => {
-    if (!groupName.trim() || selectedUsers.length < 2) {
-      alert('Please enter a group name and select at least 2 members');
-      return;
-    }
-
-    setCreating(true);
-    try {
-      const userIds = selectedUsers.map(u => u._id);
-      await onCreateGroup(groupName, userIds);
-      
-      setGroupName('');
-      setSelectedUsers([]);
-      setSearchQuery('');
-      onClose();
-    } catch (error) {
-      console.error('Error creating group:', error);
-      alert('Failed to create group chat');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const filteredUsers = allUsers
-    .filter(u => u._id !== currentUserId)
-    .filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] flex flex-col">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Create Group Chat</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="p-4 border-b border-gray-200">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Group Name</label>
-          <input
-            type="text"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            placeholder="Enter group name..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div className="px-4 pt-3 pb-2">
-          <p className="text-sm text-gray-600">
-            {selectedUsers.length} member{selectedUsers.length !== 1 ? 's' : ''} selected
-            {selectedUsers.length > 0 && <span className="text-gray-400"> (minimum 2 required)</span>}
-          </p>
-        </div>
-
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
-          {filteredUsers.length === 0 ? (
-            <p className="text-center text-gray-500 py-4">No users found</p>
-          ) : (
-            <div className="space-y-1">
-              {filteredUsers.map(user => {
-                const isSelected = selectedUsers.find(u => u._id === user._id);
-                return (
-                  <button
-                    key={user._id}
-                    onClick={() => toggleUserSelection(user)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                      isSelected ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                        {user.name?.charAt(0).toUpperCase()}
-                      </div>
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-gray-200 flex gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleCreate}
-            disabled={!groupName.trim() || selectedUsers.length < 2 || creating}
-            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          >
-            {creating ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Group'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// New Chat Modal Component
-const NewChatModal = ({ isOpen, onClose, allUsers, currentUserId, onStartChat, existingChats }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  if (!isOpen) return null;
-
-  const availableUsers = allUsers
-    .filter(u => u._id !== currentUserId)
-    .filter(u => {
-      const chatExists = existingChats.some(chat => 
-        !chat.isGroupChat && chat.users?.some(cu => cu._id === u._id)
-      );
-      return !chatExists;
-    })
-    .filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[70vh] flex flex-col">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Start New Chat</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search users..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
-          {availableUsers.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500">
-                {searchQuery ? 'No users found' : 'All users have existing chats'}
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              {availableUsers.map(user => (
-                <button
-                  key={user._id}
-                  onClick={() => {
-                    onStartChat(user);
-                    onClose();
-                  }}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                    {user.name?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const ChatPage = () => {
-  const { userId, name, email,setUnread } = useContext(AuthContext);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { userId, name, email, setUnread } = useContext(AuthContext);
   const user = userId ? { _id: userId, name, email } : null;
 
-  
+  const selectedChatIdFromState = location.state?.selectedChatId;
+
   const [chats, setChats] = useState([]);
   const [chatMessages, setChatMessages] = useState(new Map());
   const [selectedChat, setSelectedChat] = useState(null);
@@ -516,40 +85,43 @@ const ChatPage = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(new Map());
   const [toasts, setToasts] = useState([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState([]);
 
-// Add toast helper functions:
-const addToast = (message, sender) => {
-  const id = Date.now();
-  setToasts(prev => [...prev, { id, message, sender }]);
-};
-
-const removeToast = (id) => {
-  setToasts(prev => prev.filter(toast => toast.id !== id));
-};
-
-
-  
-  
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
-  const typingClearTimeoutsRef = useRef(new Map()); // NEW: Track typing clear timeouts
+  const typingClearTimeoutsRef = useRef(new Map());
   const messageContainerRef = useRef(null);
   const socketRef = useRef(null);
   const joinedChatsRef = useRef(new Set());
+  const dataLoadedRef = useRef(false);
 
+  const addToast = (message, sender, chatId) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, sender, chatId }]);
+  };
 
-  
+  const removeToast = (id) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
 
-  // Setup socket connection
+  const handleToastClick = (chatId) => {
+    const chat = chats.find(c => c._id === chatId);
+    if (chat) {
+      handleChatSelect(chat);
+    }
+  };
+
+  // Only load data once on initial mount
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || dataLoadedRef.current) return;
 
     console.log('🔌 Initializing socket for user:', userId);
     socketRef.current = connectSocket(userId);
 
     loadInitialData();
+    dataLoadedRef.current = true;
 
-    // Request online status for all users after a short delay to ensure connection is established
     const requestOnlineStatusTimer = setTimeout(() => {
       console.log('🔍 Requesting online users after connection');
       allUsers.forEach(user => {
@@ -561,92 +133,127 @@ const removeToast = (id) => {
 
     return () => {
       clearTimeout(requestOnlineStatusTimer);
-      
-      // Clear all typing timeouts
       typingClearTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
       typingClearTimeoutsRef.current.clear();
-      
       socketService.cleanup();
       disconnectSocket();
+      dataLoadedRef.current = false;
     };
   }, [userId]);
 
-// Load initial data and request online statuses
-const loadInitialData = async () => {
-  try {
-    setLoading(true);
-    
-    const [chatsResponse, usersResponse] = await Promise.all([
-      chatService.getChats(0, 100),
-      chatService.getAllUsers()
-    ]);
+  // Upload progress listener
+  useEffect(() => {
+    const handleShowProgress = (e) => {
+      setUploadProgress(e.detail.files);
+    };
 
-    const chatsData = Array.isArray(chatsResponse.data) ? chatsResponse.data : chatsResponse.data?.data || [];
-    setChats(chatsData);
-    
-    const usersData = usersResponse.data.employees || [];
-    setAllUsers(usersData);
+    const handleUploadProgress = (e) => {
+      setUploadProgress(prev => 
+        prev.map(file => 
+          file.uploadInfo.fileId === e.detail.fileId 
+            ? { ...file, progress: e.detail.progress }
+            : file
+        )
+      );
+    };
 
-    const messagesMap = new Map();
-    const unreadMap = new Map();
+    const handleUploadComplete = (e) => {
+      if (e.detail.success) {
+        setTimeout(() => setUploadProgress([]), 2000);
+      } else {
+        setUploadProgress([]);
+      }
+    };
 
-    await Promise.all(
-      chatsData.map(async (chat) => {
-        try {
-          const response = await chatService.getChatWithMessages(chat._id, 30);
-          let messagesData = [];
-          
-          if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
-            messagesData = response.data.data.messages;
-          } else if (response.data?.messages && Array.isArray(response.data.messages)) {
-            messagesData = response.data.messages;
+    window.addEventListener('show-upload-progress', handleShowProgress);
+    window.addEventListener('upload-progress', handleUploadProgress);
+    window.addEventListener('upload-complete', handleUploadComplete);
+
+    return () => {
+      window.removeEventListener('show-upload-progress', handleShowProgress);
+      window.removeEventListener('upload-progress', handleUploadProgress);
+      window.removeEventListener('upload-complete', handleUploadComplete);
+    };
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      setLoading(true);
+      
+      const [chatsResponse, usersResponse] = await Promise.all([
+        chatService.getChats(0, 100),
+        chatService.getAllUsers()
+      ]);
+
+      const chatsData = Array.isArray(chatsResponse.data) ? chatsResponse.data : chatsResponse.data?.data || [];
+      setChats(chatsData);
+      
+      const usersData = usersResponse.data.employees || [];
+      setAllUsers(usersData);
+
+      const messagesMap = new Map();
+      const unreadMap = new Map();
+
+      await Promise.all(
+        chatsData.map(async (chat) => {
+          try {
+            const response = await chatService.getChatWithMessages(chat._id, 100); 
+            let messagesData = [];
+            
+            if (response.data?.data?.messages && Array.isArray(response.data.data.messages)) {
+              messagesData = response.data.data.messages;
+            } else if (response.data?.messages && Array.isArray(response.data.messages)) {
+              messagesData = response.data.messages;
+            }
+            
+            messagesMap.set(chat._id, messagesData);
+            
+            const unread = messagesData.filter(m => 
+              m.sender._id !== user?._id && !m.isRead
+            ).length;
+            
+            if (unread > 0) {
+              unreadMap.set(chat._id, unread);
+            }
+          } catch (error) {
+            console.error('Error loading messages for chat:', chat._id, error);
+            messagesMap.set(chat._id, []);
           }
-          
-          messagesMap.set(chat._id, messagesData);
-          
-          // ✅ Count unread messages properly
-          const unread = messagesData.filter(m => 
-            m.sender._id !== user?._id && !m.isRead
-          ).length;
-          
-          if (unread > 0) {
-            unreadMap.set(chat._id, unread);
+        })
+      );
+
+      setChatMessages(messagesMap);
+      setUnreadMessages(unreadMap);
+      const totalUnread = Array.from(unreadMap.values()).reduce((acc, val) => acc + val, 0);
+      setUnread(totalUnread);
+      
+      setTimeout(() => {
+        console.log('🔍 Requesting online status for', usersData.length, 'users');
+        usersData.forEach(userData => {
+          if (userData._id !== user?._id) {
+            socketService.getUserOnlineStatus(userData._id);
           }
-        } catch (error) {
-          console.error('Error loading messages for chat:', chat._id, error);
-          messagesMap.set(chat._id, []);
-        }
-      })
-    );
+        });
+      }, 1000);
 
-    setChatMessages(messagesMap);
-    setUnreadMessages(unreadMap);
-    const totalUnread = Array.from(unreadMap.values()).reduce((acc, val) => acc + val, 0);
-    setUnread
-    
-    console.log('✅ Loaded messages for', messagesMap.size, 'chats');
-    console.log('📬 Total unread chats:', unreadMap.size);
-    
-    // ✅ Request online status for all users after a short delay
-    setTimeout(() => {
-      console.log('🔍 Requesting online status for', usersData.length, 'users');
-      usersData.forEach(userData => {
-        if (userData._id !== user?._id) {
-          socketService.getUserOnlineStatus(userData._id);
+      if (selectedChatIdFromState) {
+        const chatToSelect = chatsData.find(c => c._id === selectedChatIdFromState);
+        if (chatToSelect) {
+          console.log('📍 Auto-selecting chat from notification:', selectedChatIdFromState);
+          setTimeout(() => handleChatSelect(chatToSelect), 500);
         }
-      });
-    }, 1000);
-    
-  } catch (error) {
-    console.error('Error loading initial data:', error);
-    setChats([]);
-    setAllUsers([]);
-  } finally {
-    setLoading(false);
-  }
-};
+        window.history.replaceState({}, document.title);
+      }
+      
+    } catch (error) {
+      console.error('Error loading initial data:', error);
+      setChats([]);
+      setAllUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Join ALL chat rooms when chats are loaded
   useEffect(() => {
     if (!socketRef.current || chats.length === 0) return;
 
@@ -658,262 +265,270 @@ const loadInitialData = async () => {
       }
     });
   }, [chats]);
-// Setup socket listeners
-useEffect(() => {
-  if (!socketRef.current || !userId) return;
-const handleNewMessage = (message) => {
-  console.log('💬 Message received:', message);
-  
-  // Normalize chat ID
-  let messageChatId;
-  if (typeof message.chat === 'object' && message.chat !== null) {
-    messageChatId = message.chat._id?.toString() || message.chat.toString();
-  } else {
-    messageChatId = message.chat?.toString();
-  }
-  
-  const selectedChatId = selectedChat?._id?.toString();
-  const isCurrentChat = selectedChatId && messageChatId === selectedChatId;
-  
-  // Update chatMessages Map
-  setChatMessages(prev => {
-    const newMap = new Map(prev);
-    const chatMsgs = newMap.get(messageChatId) || [];
-    
-    const exists = chatMsgs.some(m => m._id === message._id);
-    if (!exists) {
-      newMap.set(messageChatId, [...chatMsgs, message]);
-    }
-    
-    return newMap;
-  });
 
-  if (isCurrentChat) {
-    setMessages(prev => {
-      const exists = prev.some(m => m._id === message._id);
-      if (exists) return prev;
-      return [...prev, message];
-    });
-    
-    setTimeout(() => scrollToBottom(), 100);
+  useEffect(() => {
+    if (!socketRef.current || !userId) return;
 
-    if (message.sender._id !== user?._id) {
-      socketService.markMessageAsRead(message._id, user._id);
-    }
-  } else {
-    // ✅ Update unread count AND show toast
-    if (message.sender._id !== user?._id) {
-      console.log('📬 Incrementing unread count for chat:', messageChatId);
+    const handleNewMessage = (message) => {
+      console.log('💬 Message received:', message);
       
-      setUnreadMessages(prev => {
-        const newMap = new Map(prev);
-        const current = newMap.get(messageChatId) || 0;
-        newMap.set(messageChatId, current + 1);
-        
-        // Update global unread count
-        const totalUnread = Array.from(newMap.values()).reduce((acc, val) => acc + val, 0);
-        setUnread(totalUnread);
-        
-        return newMap;
-      });
-      
-      // 🔔 Show toast notification
-      addToast(message.message, message.sender.name);
-      
-      // 🔊 Play notification sound (optional)
-      try {
-        const audio = new Audio('/notification.mp3'); // Add a notification sound file to your public folder
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Audio play failed:', e));
-      } catch (error) {
-        console.log('Notification sound error:', error);
+      let messageChatId;
+      if (typeof message.chat === 'object' && message.chat !== null) {
+        messageChatId = message.chat._id?.toString() || message.chat.toString();
+      } else {
+        messageChatId = message.chat?.toString();
       }
-    }
-  }
-};
-
-  const handleUserTyping = ({ userId: typingUserId, chatId }) => {
-    if (typingUserId !== user?._id) {
-      console.log('⌨️ User typing:', typingUserId, 'in chat:', chatId);
       
-      setTypingUsers(prev => {
+      const selectedChatId = selectedChat?._id?.toString();
+      const isCurrentChat = selectedChatId && messageChatId === selectedChatId;
+      
+      setChatMessages(prev => {
         const newMap = new Map(prev);
-        const chatTypers = newMap.get(chatId) || new Set();
-        chatTypers.add(typingUserId);
-        newMap.set(chatId, chatTypers);
+        const chatMsgs = newMap.get(messageChatId) || [];
+        
+        const exists = chatMsgs.some(m => m._id === message._id);
+        if (!exists) {
+          newMap.set(messageChatId, [...chatMsgs, message]);
+        }
+        
         return newMap;
       });
+
+      setChats(prev => {
+        const chatIndex = prev.findIndex(c => c._id === messageChatId);
+        if (chatIndex === -1) return prev;
+        
+        const updatedChats = [...prev];
+        const chatToUpdate = { ...updatedChats[chatIndex] };
+        chatToUpdate.latestMessage = message;
+        
+        updatedChats.splice(chatIndex, 1);
+        updatedChats.unshift(chatToUpdate);
+        
+        return updatedChats;
+      });
+
+      if (isCurrentChat) {
+        setMessages(prev => {
+          const exists = prev.some(m => m._id === message._id);
+          if (exists) return prev;
+          return [...prev, message];
+        });
+        
+        setTimeout(() => scrollToBottom(), 100);
+
+        if (message.sender._id !== user?._id) {
+          socketService.markMessageAsRead(message._id, user._id);
+        }
+      } else {
+        if (message.sender._id !== user?._id) {
+          console.log('📬 Incrementing unread count for chat:', messageChatId);
+          
+          setUnreadMessages(prev => {
+            const newMap = new Map(prev);
+            const current = newMap.get(messageChatId) || 0;
+            newMap.set(messageChatId, current + 1);
+            
+            const totalUnread = Array.from(newMap.values()).reduce((acc, val) => acc + val, 0);
+            setUnread(totalUnread);
+            
+            return newMap;
+          });
+          
+          addToast(message.message, message.sender.name, messageChatId);
+          
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(`New message from ${message.sender.name}`, {
+              body: message.message,
+              icon: '/logo.png',
+              tag: messageChatId
+            });
+          }
+          
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Audio play failed:', e));
+          } catch (error) {
+            console.log('Notification sound error:', error);
+          }
+        }
+      }
+    };
+
+    const handleUserTyping = ({ userId: typingUserId, chatId }) => {
+      if (typingUserId !== user?._id) {
+        console.log('⌨️ User typing:', typingUserId, 'in chat:', chatId);
+        
+        setTypingUsers(prev => {
+          const newMap = new Map(prev);
+          const chatTypers = newMap.get(chatId) || new Set();
+          chatTypers.add(typingUserId);
+          newMap.set(chatId, chatTypers);
+          return newMap;
+        });
+        
+        const timeoutKey = `${chatId}-${typingUserId}`;
+        if (typingClearTimeoutsRef.current.has(timeoutKey)) {
+          clearTimeout(typingClearTimeoutsRef.current.get(timeoutKey));
+        }
+        
+        const timeout = setTimeout(() => {
+          console.log('⏱️ Clearing typing for user:', typingUserId);
+          setTypingUsers(prev => {
+            const newMap = new Map(prev);
+            const chatTypers = newMap.get(chatId);
+            if (chatTypers) {
+              chatTypers.delete(typingUserId);
+              if (chatTypers.size === 0) {
+                newMap.delete(chatId);
+              } else {
+                newMap.set(chatId, chatTypers);
+              }
+            }
+            return newMap;
+          });
+          typingClearTimeoutsRef.current.delete(timeoutKey);
+        }, 2000);
+        
+        typingClearTimeoutsRef.current.set(timeoutKey, timeout);
+      }
+    };
+
+    const handleUserStopTyping = ({ userId: typingUserId, chatId }) => {
+      console.log('🛑 User stopped typing:', typingUserId);
       
-      // Clear existing timeout for this user in this chat
       const timeoutKey = `${chatId}-${typingUserId}`;
       if (typingClearTimeoutsRef.current.has(timeoutKey)) {
         clearTimeout(typingClearTimeoutsRef.current.get(timeoutKey));
-      }
-      
-      // Set new timeout to clear typing after 2 seconds
-      const timeout = setTimeout(() => {
-        console.log('⏱️ Clearing typing for user:', typingUserId);
-        setTypingUsers(prev => {
-          const newMap = new Map(prev);
-          const chatTypers = newMap.get(chatId);
-          if (chatTypers) {
-            chatTypers.delete(typingUserId);
-            if (chatTypers.size === 0) {
-              newMap.delete(chatId);
-            } else {
-              newMap.set(chatId, chatTypers);
-            }
-          }
-          return newMap;
-        });
         typingClearTimeoutsRef.current.delete(timeoutKey);
-      }, 2000);
-      
-      typingClearTimeoutsRef.current.set(timeoutKey, timeout);
-    }
-  };
-
-  const handleUserStopTyping = ({ userId: typingUserId, chatId }) => {
-    console.log('🛑 User stopped typing:', typingUserId);
-    
-    // Clear any pending timeout
-    const timeoutKey = `${chatId}-${typingUserId}`;
-    if (typingClearTimeoutsRef.current.has(timeoutKey)) {
-      clearTimeout(typingClearTimeoutsRef.current.get(timeoutKey));
-      typingClearTimeoutsRef.current.delete(timeoutKey);
-    }
-    
-    setTypingUsers(prev => {
-      const newMap = new Map(prev);
-      const chatTypers = newMap.get(chatId);
-      if (chatTypers) {
-        chatTypers.delete(typingUserId);
-        if (chatTypers.size === 0) {
-          newMap.delete(chatId);
-        } else {
-          newMap.set(chatId, chatTypers);
-        }
       }
-      return newMap;
-    });
-  };
+      
+      setTypingUsers(prev => {
+        const newMap = new Map(prev);
+        const chatTypers = newMap.get(chatId);
+        if (chatTypers) {
+          chatTypers.delete(typingUserId);
+          if (chatTypers.size === 0) {
+            newMap.delete(chatId);
+          } else {
+            newMap.set(chatId, chatTypers);
+          }
+        }
+        return newMap;
+      });
+    };
 
-  // ✅ FIXED: Handle initial online users list
-  const handleInitialOnlineUsers = ({ users }) => {
-    console.log('👥 Received initial online users:', users.length);
-    setOnlineUsers(new Set(users));
-  };
+    const handleInitialOnlineUsers = ({ users }) => {
+      console.log('👥 Received initial online users:', users.length);
+      setOnlineUsers(new Set(users));
+    };
 
-  const handleUserOnline = ({ userId: onlineUserId }) => {
-    console.log('✅ User came online:', onlineUserId);
-    setOnlineUsers(prev => {
-      const newSet = new Set(prev);
-      newSet.add(onlineUserId);
-      console.log('👥 Total online users:', newSet.size);
-      return newSet;
-    });
-  };
-
-  const handleUserOffline = ({ userId: offlineUserId }) => {
-    console.log('❌ User went offline:', offlineUserId);
-    setOnlineUsers(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(offlineUserId);
-      console.log('👥 Total online users:', newSet.size);
-      return newSet;
-    });
-  };
-
-  // ✅ FIXED: Handle user online status response
-  const handleUserOnlineStatus = ({ userId: statusUserId, isOnline }) => {
-    console.log(`🔍 User status: ${statusUserId} is ${isOnline ? 'online' : 'offline'}`);
-    if (isOnline) {
-      setOnlineUsers(prev => new Set([...prev, statusUserId]));
-    } else {
+    const handleUserOnline = ({ userId: onlineUserId }) => {
+      console.log('✅ User came online:', onlineUserId);
       setOnlineUsers(prev => {
         const newSet = new Set(prev);
-        newSet.delete(statusUserId);
+        newSet.add(onlineUserId);
         return newSet;
       });
-    }
-  };
+    };
 
-  const handleMessageRead = ({ messageId }) => {
-    console.log('✅ Message read:', messageId);
-    setChatMessages(prev => {
-      const newMap = new Map(prev);
-      for (const [chatId, msgs] of newMap.entries()) {
-        const updated = msgs.map(m => 
-          m._id === messageId ? { ...m, isRead: true } : m
-        );
-        newMap.set(chatId, updated);
+    const handleUserOffline = ({ userId: offlineUserId }) => {
+      console.log('❌ User went offline:', offlineUserId);
+      setOnlineUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(offlineUserId);
+        return newSet;
+      });
+    };
+
+    const handleUserOnlineStatus = ({ userId: statusUserId, isOnline }) => {
+      console.log(`🔍 User status: ${statusUserId} is ${isOnline ? 'online' : 'offline'}`);
+      if (isOnline) {
+        setOnlineUsers(prev => new Set([...prev, statusUserId]));
+      } else {
+        setOnlineUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(statusUserId);
+          return newSet;
+        });
       }
+    };
+
+    const handleMessageRead = ({ messageId }) => {
+      console.log('✅ Message read:', messageId);
+      setChatMessages(prev => {
+        const newMap = new Map(prev);
+        for (const [chatId, msgs] of newMap.entries()) {
+          const updated = msgs.map(m => 
+            m._id === messageId ? { ...m, isRead: true } : m
+          );
+          newMap.set(chatId, updated);
+        }
+        return newMap;
+      });
+
+      setMessages(prev => prev.map(msg => 
+        msg._id === messageId ? { ...msg, isRead: true } : msg
+      ));
+    };
+
+    socketService.onMessageReceived(handleNewMessage);
+    socketService.onUserTyping(handleUserTyping);
+    socketService.onUserStopTyping(handleUserStopTyping);
+    socketService.onUserOnline(handleUserOnline);
+    socketService.onUserOffline(handleUserOffline);
+    socketService.onMessageRead(handleMessageRead);
+
+    if (socketRef.current) {
+      socketRef.current.on('initial online users', handleInitialOnlineUsers);
+      socketRef.current.on('user online status', handleUserOnlineStatus);
+    }
+
+    return () => {
+      socketService.offMessageReceived();
+      socketService.offUserTyping();
+      socketService.offUserStopTyping();
+      socketService.offUserOnline();
+      socketService.offUserOffline();
+      socketService.offMessageRead();
+      
+      if (socketRef.current) {
+        socketRef.current.off('initial online users', handleInitialOnlineUsers);
+        socketRef.current.off('user online status', handleUserOnlineStatus);
+      }
+    };
+  }, [selectedChat, userId, user, chats]);
+
+  const handleChatSelect = async (chat) => {
+    if (selectedChat?._id === chat._id) return;
+
+    setSelectedChat(chat);
+
+    setUnreadMessages(prev => {
+      const newMap = new Map(prev);
+      const unreadCount = newMap.get(chat._id) || 0;
+      newMap.delete(chat._id);
+      
+      const totalUnread = Array.from(newMap.values()).reduce((acc, val) => acc + val, 0);
+      setUnread(totalUnread);
+      
       return newMap;
     });
 
-    setMessages(prev => prev.map(msg => 
-      msg._id === messageId ? { ...msg, isRead: true } : msg
-    ));
-  };
-
-  // ✅ Register all listeners
-  socketService.onMessageReceived(handleNewMessage);
-  socketService.onUserTyping(handleUserTyping);
-  socketService.onUserStopTyping(handleUserStopTyping);
-  socketService.onUserOnline(handleUserOnline);
-  socketService.onUserOffline(handleUserOffline);
-  socketService.onMessageRead(handleMessageRead);
-
-  // ✅ NEW: Listen for initial online users and online status responses
-  if (socketRef.current) {
-    socketRef.current.on('initial online users', handleInitialOnlineUsers);
-    socketRef.current.on('user online status', handleUserOnlineStatus);
-  }
-
-  return () => {
-    socketService.offMessageReceived();
-    socketService.offUserTyping();
-    socketService.offUserStopTyping();
-    socketService.offUserOnline();
-    socketService.offUserOffline();
-    socketService.offMessageRead();
+    const cachedMessages = chatMessages.get(chat._id) || [];
+    setMessages(cachedMessages);
     
-    if (socketRef.current) {
-      socketRef.current.off('initial online users', handleInitialOnlineUsers);
-      socketRef.current.off('user online status', handleUserOnlineStatus);
-    }
+    cachedMessages.forEach(msg => {
+      if (msg.sender._id !== user?._id && !msg.isRead) {
+        console.log('✅ Marking message as read on chat open:', msg._id);
+        socketService.markMessageAsRead(msg._id, user._id);
+      }
+    });
+
+    setTimeout(() => scrollToBottom(), 100);
   };
-}, [selectedChat, userId, user]);
 
-  // Handle chat selection
-
-const handleChatSelect = async (chat) => {
-  if (selectedChat?._id === chat._id) return;
-
-  setSelectedChat(chat);
-
-  // ✅ Clear unread count for this chat
-  setUnreadMessages(prev => {
-    const newMap = new Map(prev);
-    newMap.delete(chat._id);
-    return newMap;
-  });
-
-  const cachedMessages = chatMessages.get(chat._id) || [];
-  setMessages(cachedMessages);
-  
-  // ✅ Mark ALL unread messages as read when opening the chat
-  cachedMessages.forEach(msg => {
-    if (msg.sender._id !== user?._id && !msg.isRead) {
-      console.log('✅ Marking message as read on chat open:', msg._id);
-      socketService.markMessageAsRead(msg._id, user._id);
-    }
-  });
-
-  setTimeout(() => scrollToBottom(), 100);
-};
-
-  // Send message
   const handleSendMessage = () => {
     if (!messageInput.trim() || !selectedChat || sendingMessage) return;
 
@@ -932,7 +547,6 @@ const handleChatSelect = async (chat) => {
     setReplyingTo(null);
     socketService.sendStopTyping(selectedChat._id, user._id);
     
-    // Clear typing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -940,7 +554,6 @@ const handleChatSelect = async (chat) => {
     setSendingMessage(false);
   };
 
-  // Handle typing
   const handleTyping = (e) => {
     setMessageInput(e.target.value);
 
@@ -957,13 +570,11 @@ const handleChatSelect = async (chat) => {
     }, 1000);
   };
 
-  // Handle reply
   const handleReply = (message) => {
     setReplyingTo(message);
     document.getElementById('message-input')?.focus();
   };
 
-  // Scroll to message
   const scrollToMessage = (messageId) => {
     const element = document.getElementById(`message-${messageId}`);
     if (element) {
@@ -973,12 +584,10 @@ const handleChatSelect = async (chat) => {
     }
   };
 
-  // Scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Start new chat
   const handleStartNewChat = async (selectedUser) => {
     try {
       const response = await chatService.postChat(selectedUser._id);
@@ -1000,7 +609,6 @@ const handleChatSelect = async (chat) => {
     }
   };
 
-  // Create group chat
   const handleCreateGroupChat = async (groupName, userIds) => {
     try {
       const response = await chatService.createGroup(groupName, userIds);
@@ -1023,7 +631,6 @@ const handleChatSelect = async (chat) => {
     }
   };
 
-  // Update group name
   const handleUpdateGroup = async (chatId, newName) => {
     try {
       const response = await chatService.renameGroup(chatId, newName);
@@ -1039,7 +646,6 @@ const handleChatSelect = async (chat) => {
     }
   };
 
-  // Add member to group
   const handleAddMember = async (chatId, userId) => {
     try {
       const response = await chatService.addToGroup(chatId, userId);
@@ -1055,7 +661,6 @@ const handleChatSelect = async (chat) => {
     }
   };
 
-  // Remove member from group
   const handleRemoveMember = async (chatId, userId) => {
     try {
       const response = await chatService.removeFromGroup(chatId, userId);
@@ -1071,19 +676,16 @@ const handleChatSelect = async (chat) => {
     }
   };
 
-  // Get other user
   const getOtherUser = (chat) => {
     if (!chat || chat.isGroupChat) return null;
     if (!chat.users || !Array.isArray(chat.users)) return null;
     return chat.users.find(u => u && u._id && u._id !== user?._id);
   };
 
-  // Check if user is online
   const isUserOnline = (userId) => {
     return userId ? onlineUsers.has(userId) : false;
   };
 
-  // Get chat name
   const getChatName = (chat) => {
     if (!chat) return 'Unknown';
     if (chat.isGroupChat) return chat.chatName || 'Group Chat';
@@ -1091,7 +693,6 @@ const handleChatSelect = async (chat) => {
     return otherUser?.name || 'Unknown User';
   };
 
-  // Filter chats
   const filteredChats = chats.filter(chat => {
     try {
       const chatName = getChatName(chat);
@@ -1102,7 +703,6 @@ const handleChatSelect = async (chat) => {
     }
   });
 
-  // Get typing indicator text
   const getTypingText = () => {
     if (!selectedChat) return '';
     
@@ -1123,6 +723,16 @@ const handleChatSelect = async (chat) => {
       if (!otherUser || !otherUser._id) return '';
       return chatTypers.has(otherUser._id) ? 'typing...' : '';
     }
+  };
+
+  const handleOpenRepository = () => {
+    if (selectedChat?.Repository?._id) {
+      navigate(`/files/${selectedChat.Repository._id}`);
+    }
+  };
+
+  const handleFileMessageClick = () => {
+    handleOpenRepository();
   };
 
   if (loading) {
@@ -1155,6 +765,19 @@ const handleChatSelect = async (chat) => {
         existingChats={chats}
       />
 
+      {showUploadModal && selectedChat && (
+        <UploadFilesModal
+          onClose={() => setShowUploadModal(false)}
+          repoId={selectedChat.Repository._id}
+          chatId={selectedChat._id}
+          userId={user._id}
+          onUploadComplete={() => {
+            console.log('Files uploaded successfully');
+            setShowUploadModal(false);
+          }}
+        />
+      )}
+
       <GroupInfoModal
         isOpen={showGroupInfo}
         onClose={() => setShowGroupInfo(false)}
@@ -1165,6 +788,10 @@ const handleChatSelect = async (chat) => {
         onAddMember={handleAddMember}
         onRemoveMember={handleRemoveMember}
       />
+
+      {uploadProgress.length > 0 && (
+        <UploadProgressToast files={uploadProgress} />
+      )}
 
       {/* Sidebar */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
@@ -1293,15 +920,27 @@ const handleChatSelect = async (chat) => {
                   </p>
                 </div>
               </div>
-              {selectedChat.isGroupChat && (
-                <button 
-                  onClick={() => setShowGroupInfo(true)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
-                  title="Group Info"
-                >
-                  <Info className="w-5 h-5 text-gray-600" />
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {selectedChat.Repository && (
+                  <button 
+                    onClick={handleOpenRepository}
+                    className="p-2 hover:bg-gray-100 rounded-lg flex items-center gap-2"
+                    title="Open Repository Files"
+                  >
+                    <FolderOpen className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm text-gray-600">Files</span>
+                  </button>
+                )}
+                {selectedChat.isGroupChat && (
+                  <button 
+                    onClick={() => setShowGroupInfo(true)}
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    title="Group Info"
+                  >
+                    <Info className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Messages Area */}
@@ -1340,40 +979,75 @@ const handleChatSelect = async (chat) => {
                           )}
 
                           <div className="group relative">
-                            <div className={`rounded-2xl px-4 py-2 ${
-                              isOwn ? 'bg-blue-500 text-white rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'
-                            }`}>
-                              {message.replyTo && (
-                                <div 
-                                  onClick={() => scrollToMessage(message.replyTo._id)}
-                                  className={`mb-2 pb-2 border-l-2 pl-2 cursor-pointer ${
-                                    isOwn ? 'border-blue-300' : 'border-gray-300'
-                                  }`}
-                                >
-                                  <p className={`text-xs font-semibold ${isOwn ? 'text-blue-100' : 'text-blue-600'}`}>
-                                    {message.replyTo.sender?.name}
-                                  </p>
-                                  <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-600'} truncate`}>
-                                    {message.replyTo.message}
-                                  </p>
+                            {message.messageType === 'file' ? (
+                              <div 
+                                onClick={handleFileMessageClick}
+                                className={`rounded-2xl px-4 py-3 cursor-pointer hover:opacity-90 transition-opacity ${
+                                  isOwn ? 'bg-blue-500 text-white rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm border border-gray-200'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <FileText className={`w-8 h-8 ${isOwn ? 'text-blue-100' : 'text-blue-500'}`} />
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900'}`}>
+                                      {message.fileMetadata?.fileName || 'File'}
+                                    </p>
+                                    <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
+                                      {message.fileMetadata?.size ? formatFileSize(message.fileMetadata.size) : 'Unknown size'}
+                                    </p>
+                                  </div>
+                                  <Download className={`w-5 h-5 flex-shrink-0 ${isOwn ? 'text-blue-100' : 'text-gray-400'}`} />
                                 </div>
-                              )}
 
-                              <p className="break-words">{message.message}</p>
-
-                              <div className={`flex items-center gap-1 mt-1 text-xs ${
-                                isOwn ? 'text-blue-100' : 'text-gray-500'
-                              }`}>
-                                <span>{formatTime(message.createdAt)}</span>
-                                {isOwn && (
-                                  message.isRead ? (
-                                    <CheckCheck className="w-4 h-4" />
-                                  ) : (
-                                    <Check className="w-4 h-4" />
-                                  )
-                                )}
+                                <div className={`flex items-center gap-1 mt-2 text-xs ${
+                                  isOwn ? 'text-blue-100' : 'text-gray-500'
+                                }`}>
+                                  <span>{formatTime(message.createdAt)}</span>
+                                  {isOwn && (
+                                    message.isRead ? (
+                                      <CheckCheck className="w-4 h-4" />
+                                    ) : (
+                                      <Check className="w-4 h-4" />
+                                    )
+                                  )}
+                                </div>
                               </div>
-                            </div>
+                            ) : (
+                              <div className={`rounded-2xl px-4 py-2 ${
+                                isOwn ? 'bg-blue-500 text-white rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'
+                              }`}>
+                                {message.replyTo && (
+                                  <div 
+                                    onClick={() => scrollToMessage(message.replyTo._id)}
+                                    className={`mb-2 pb-2 border-l-2 pl-2 cursor-pointer ${
+                                      isOwn ? 'border-blue-300' : 'border-gray-300'
+                                    }`}
+                                  >
+                                    <p className={`text-xs font-semibold ${isOwn ? 'text-blue-100' : 'text-blue-600'}`}>
+                                      {message.replyTo.sender?.name}
+                                    </p>
+                                    <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-600'} truncate`}>
+                                      {message.replyTo.message}
+                                    </p>
+                                  </div>
+                                )}
+
+                                <p className="break-words">{message.message}</p>
+
+                                <div className={`flex items-center gap-1 mt-1 text-xs ${
+                                  isOwn ? 'text-blue-100' : 'text-gray-500'
+                                }`}>
+                                  <span>{formatTime(message.createdAt)}</span>
+                                  {isOwn && (
+                                    message.isRead ? (
+                                      <CheckCheck className="w-4 h-4" />
+                                    ) : (
+                                      <Check className="w-4 h-4" />
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                             <button
                               onClick={() => handleReply(message)}
@@ -1423,9 +1097,15 @@ const handleChatSelect = async (chat) => {
               )}
 
               <div className="flex items-end gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <Paperclip className="w-5 h-5 text-gray-600" />
-                </button>
+                {selectedChat.Repository && (
+                  <button 
+                    onClick={() => setShowUploadModal(true)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Upload Files"
+                  >
+                    <Paperclip className="w-5 h-5 text-gray-600" />
+                  </button>
+                )}
 
                 <div className="flex-1 relative">
                   <textarea
@@ -1506,7 +1186,7 @@ const handleChatSelect = async (chat) => {
           background: #555;
         }
       `}</style>
-     <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ToastContainer toasts={toasts} removeToast={removeToast} onToastClick={handleToastClick} />
     </div>
   );
 };

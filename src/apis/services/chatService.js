@@ -38,7 +38,7 @@ const chatService = {
 
     // Group Chat Operations
     createGroup: async (name, users) => {
-        return await createGroup(name, users);
+        return await createGroup(name, users);A
     },
 
     renameGroup: async (chatId, name) => {

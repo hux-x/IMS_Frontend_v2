@@ -1,50 +1,42 @@
+// components/ChatHeader.jsx
 import React from 'react';
-import { Phone, Video, MoreVertical } from 'lucide-react';
-import ChatAvatar from '@/components/chats/ChatAvatar';
-import Button from '@/components/custom/CustomButton';
+import { Users, Info } from 'lucide-react';
 
-const ChatHeader = ({ selectedChat, setShowMobile }) => (
-  <div className="p-4 border-b border-gray-200 bg-white">
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-3">
-        <button
-          onClick={() => setShowMobile(false)}
-          className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-        >
-          ←
-        </button>
-        
-        <ChatAvatar chat={selectedChat} showStatus={true} />
-        
+const ChatHeader = ({ chat, chatName, typingText, isOnline, onShowInfo }) => {
+  return (
+    <div className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
+          chat.isGroupChat ? 'bg-purple-500' : 'bg-blue-500'
+        }`}>
+          {chat.isGroupChat ? (
+            <Users className="w-5 h-5" />
+          ) : (
+            chatName.charAt(0).toUpperCase()
+          )}
+        </div>
         <div>
-          <h3 className="font-medium text-gray-900">{selectedChat.name}</h3>
-          <p className="text-sm text-gray-600">
-            {selectedChat.type === 'direct' ? (
-              <span className="capitalize">{selectedChat.status}</span>
-            ) : (
-              <span>{selectedChat.memberCount} members</span>
+          <h2 className="font-semibold text-gray-900">{chatName}</h2>
+          <p className="text-xs text-gray-500">
+            {typingText || (
+              chat.isGroupChat 
+                ? `${chat.users?.length || 0} members`
+                : isOnline ? 'Online' : 'Offline'
             )}
           </p>
         </div>
       </div>
-      
-      <div className="flex items-center space-x-2">
-        {selectedChat.type === 'direct' && (
-          <>
-            <Button variant="ghost" size="sm">
-              <Phone className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <Video className="w-4 h-4" />
-            </Button>
-          </>
-        )}
-        <Button variant="ghost" size="sm">
-          <MoreVertical className="w-4 h-4" />
-        </Button>
-      </div>
+      {chat.isGroupChat && (
+        <button 
+          onClick={onShowInfo}
+          className="p-2 hover:bg-gray-100 rounded-lg"
+          title="Group Info"
+        >
+          <Info className="w-5 h-5 text-gray-600" />
+        </button>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default ChatHeader;
