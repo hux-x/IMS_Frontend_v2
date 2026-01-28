@@ -30,7 +30,7 @@ const MeetingForm = ({ meeting = null, employeesx = [], onSubmit, onCancel, load
     }
     getEmployeesForMeeting();
 
-  }, [employees]);
+  }, []);
 
   // Helper function to get employee IDs from meeting data
   const getEmployeeIds = (meetingData) => {

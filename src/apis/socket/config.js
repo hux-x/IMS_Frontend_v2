@@ -24,7 +24,7 @@ export const connectSocket = (userId) => {
   }
 
   // Create new socket connection
-  socket = io(import.meta.env.VITE_SOCKET_URL || 'https://temp.devbuns.com', {
+  socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000', {
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,

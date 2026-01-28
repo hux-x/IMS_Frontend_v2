@@ -9,14 +9,16 @@ export const getChats = async (offset = 0, limit = 30) => {
     return await client.get(`/chat?limit=${limit}&offset=${offset}`);
 };
 
-// Get chat with initial messages (first load)
-export const getChatMessages = async (chatId, limit = 20, offset = 0) => {
-    // If offset is provided, use messages endpoint for pagination
-    if (offset > 0) {
-        return await client.get(`/chat/${chatId}/messages?offset=${offset}&limit=${limit}`);
+// Get chat with initial messages (first load) or paginated messages with cursor
+export const getChatMessages = async (chatId, limit = 20, cursor = null) => {
+    let url = `/chat/${chatId}?limit=${limit}`;
+    
+    // Only append cursor if it exists and is not null/undefined
+    if (cursor) {
+        url += `&cursor=${cursor}`;
     }
-    // Otherwise use getChat endpoint for initial load with chat details
-    return await client.get(`/chat/${chatId}?limit=${limit}`);
+    
+    return await client.get(url);
 };
 
 // Get single message by ID (for reply functionality)

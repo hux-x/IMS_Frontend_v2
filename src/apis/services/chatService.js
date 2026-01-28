@@ -27,8 +27,8 @@ const chatService = {
     },
 
     // Get paginated messages for a chat
-    getMessages: async (chatId, offset = 0, limit = 20) => {
-        return await getChatMessages(chatId, limit, offset);
+    getMessages: async (chatId, cursor, limit = 20) => {
+        return await getChatMessages(chatId, cursor, limit);
     },
 
     // Get single message by ID (for reply functionality)

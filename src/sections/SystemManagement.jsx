@@ -312,12 +312,7 @@ const SystemManagement = () => {
                 <div key={role.type} className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="text-gray-700 font-medium">{role.type}</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditPermissions(role)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                    >
-                      <Edit2 size={20} />
-                    </button>
+                  
                     <button
                       onClick={() => handleRemoveRole(role.type)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
