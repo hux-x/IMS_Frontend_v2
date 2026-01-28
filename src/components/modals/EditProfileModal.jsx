@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Camera, User } from 'lucide-react';
 import authService from '@/apis/services/authService';
+import { changeOrAddProfilePicture } from '@/apis/endpoints/auth';
 
 const EditProfileModal = ({ isOpen, onClose, userInfo, onUpdate }) => {
   const [formData, setFormData] = useState({
@@ -83,7 +84,7 @@ const EditProfileModal = ({ isOpen, onClose, userInfo, onUpdate }) => {
     try {
       // Upload profile image first if changed
       if (profileImage) {
-        await authService.changeorAddProfileImage(profileImage);
+        await changeOrAddProfilePicture(profileImage);
       }
 
       // Update other profile information
