@@ -1,5 +1,5 @@
 // src/pages/ReportsPage.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAttendanceReports } from '@/hooks/useAttendanceReports';
 import {ReportFilters} from '@/components/filters/ReportFilters';
 import {SummaryCards} from '@/components/filters/ReportFilters';
@@ -29,44 +29,48 @@ const ReportsPage = () => {
     clearError
   } = useAttendanceReports();
 
+  // Clear any initial errors from the hook's mount behavior
+  useEffect(() => {
+    if (error && !selectedEmployee) {
+      clearError();
+    }
+  }, [error, selectedEmployee, clearError]);
+
   const handleFilterChange = (filterType, value) => {
     switch (filterType) {
       case 'employee':
         setSelectedEmployee(value);
         if (value) {
-          // If specific employee selected, get their history
+          // Only fetch data when specific employee is selected
           const startDate = new Date(year, month, 1).toISOString().split('T')[0];
           const endDate = new Date(year, month + 1, 0).toISOString().split('T')[0];
           getAttendanceHistory(startDate, endDate, value);
-        } else {
-          // If no employee selected, get monthly report
-          generateMonthlyReport(month, year);
         }
+        // Removed the else clause - no automatic monthly report generation
         break;
       case 'month':
         setMonth(value);
         if (selectedEmployee) {
+          // Only fetch if employee is already selected
           const startDate = new Date(year, value, 1).toISOString().split('T')[0];
           const endDate = new Date(year, value + 1, 0).toISOString().split('T')[0];
           getAttendanceHistory(startDate, endDate, selectedEmployee);
-        } else {
-          generateMonthlyReport(value, year);
         }
         break;
       case 'year':
         setYear(value);
         if (selectedEmployee) {
+          // Only fetch if employee is already selected
           const startDate = new Date(value, month, 1).toISOString().split('T')[0];
           const endDate = new Date(value, month + 1, 0).toISOString().split('T')[0];
           getAttendanceHistory(startDate, endDate, selectedEmployee);
-        } else {
-          generateMonthlyReport(month, value);
         }
         break;
       case 'dateRange':
         setDateRange(value);
-        if (value.startDate && value.endDate) {
-          getAttendanceHistory(value.startDate, value.endDate, selectedEmployee || null);
+        if (value.startDate && value.endDate && selectedEmployee) {
+          // Only fetch if employee is selected
+          getAttendanceHistory(value.startDate, value.endDate, selectedEmployee);
         }
         break;
       default:
@@ -91,7 +95,7 @@ const ReportsPage = () => {
     return `${months[month]} ${year}`;
   };
 
-  if (error) {
+  if (error && selectedEmployee) {
     return (
       <div className="p-6">
         <div className="mb-6">
@@ -117,18 +121,20 @@ const ReportsPage = () => {
           <p className="text-gray-600">
             {selectedEmployee ? 
               `Individual report for ${employees.find(emp => emp._id === selectedEmployee)?.name || 'Selected Employee'}` :
-              'Overall attendance analytics'
+              'Select an employee to view their attendance report'
             }
           </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Period: {getCurrentPeriod()}
-          </p>
+          {selectedEmployee && (
+            <p className="text-sm text-gray-500 mt-1">
+              Period: {getCurrentPeriod()}
+            </p>
+          )}
         </div>
         
         <div className="flex space-x-3">
           <button
             onClick={refreshData}
-            disabled={loading}
+            disabled={loading || !selectedEmployee}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
             {loading ? (
@@ -184,25 +190,44 @@ const ReportsPage = () => {
       {/* Content */}
       {!loading && (
         <>
-          {/* Summary Cards */}
-          <SummaryCards 
-            summary={summary} 
-            period={getCurrentPeriod()}
-            selectedEmployee={selectedEmployee}
-            employees={employees}
-          />
+          {selectedEmployee && reports.length > 0 && (
+            <>
+              {/* Summary Cards */}
+              <SummaryCards 
+                summary={summary} 
+                period={getCurrentPeriod()}
+                selectedEmployee={selectedEmployee}
+                employees={employees}
+              />
 
-          {/* Reports Table */}
-          <ReportsTable 
-            data={reports} 
-            loading={loading}
-            selectedEmployee={selectedEmployee}
-            employees={employees}
-            onExport={handleExport}
-          />
+              {/* Reports Table */}
+              <ReportsTable 
+                data={reports} 
+                loading={loading}
+                selectedEmployee={selectedEmployee}
+                employees={employees}
+                onExport={handleExport}
+              />
+            </>
+          )}
 
-          {/* No Data State */}
-          {!reports.length && !loading && (
+          {/* No Employee Selected State */}
+          {!selectedEmployee && !loading && (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <div className="w-24 h-24 mx-auto mb-4 text-gray-300">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Employee Selected</h3>
+              <p className="text-gray-500 mb-6">
+                Please select an employee from the filters above to view their attendance report.
+              </p>
+            </div>
+          )}
+
+          {/* No Data State (Employee selected but no reports) */}
+          {selectedEmployee && !reports.length && !loading && (
             <div className="bg-white rounded-lg shadow p-12 text-center">
               <div className="w-24 h-24 mx-auto mb-4 text-gray-300">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,7 +236,8 @@ const ReportsPage = () => {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Reports Available</h3>
               <p className="text-gray-500 mb-6">
-                No attendance data found for the selected period. Try adjusting your filters or check if attendance has been initiated.
+                No attendance data found for {employees.find(emp => emp._id === selectedEmployee)?.name || 'this employee'} during the selected period. 
+                Try adjusting your date range or check if attendance has been recorded.
               </p>
               <button
                 onClick={refreshData}

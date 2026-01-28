@@ -34,8 +34,8 @@ const ChatMessages = ({
         </div>
       ) : (
         <>
-          {messages.map((message, index) => {
-            const isOwn = message.sender._id === user?._id;
+          {messages?.map((message, index) => {
+            const isOwn = message?.sender?._id === user?._id;
             const showAvatar = index === 0 || messages[index - 1].sender._id !== message.sender._id;
 
             return (
