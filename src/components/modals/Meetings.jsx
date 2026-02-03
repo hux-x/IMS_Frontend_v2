@@ -239,10 +239,31 @@ const MeetingModals = ({
                     <div className="space-y-2">
                       {getMeetingEmployees(currentMeeting).map((emp, index) => (
                         <div key={emp._id || emp.id || index} className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-600 font-medium text-sm">
-                              {getEmployeeInitials(emp.name)}
-                            </span>
+                          <div className="relative w-8 h-8">
+                            {emp.profile_picture_url ? (
+                              <>
+                                <img
+                                  src={emp.profile_picture_url}
+                                  alt={emp.name || 'Employee'}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'flex';
+                                  }}
+                                />
+                                <div className="w-8 h-8 bg-blue-100 rounded-full items-center justify-center hidden">
+                                  <span className="text-blue-600 font-medium text-sm">
+                                    {getEmployeeInitials(emp.name)}
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 font-medium text-sm">
+                                  {getEmployeeInitials(emp.name)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                           <div>
                             <p className="text-gray-900 font-medium">

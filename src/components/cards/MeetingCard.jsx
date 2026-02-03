@@ -37,7 +37,7 @@ const MeetingCard = ({ meeting, onClick }) => (
       </div>
       <div className="flex items-center">
         <Users className="h-4 w-4 mr-1" />
-        <span>{meeting.employees?.length || 0} attendees</span>
+        <span>{meeting.employees?.length || 0} atitendees</span>
       </div>
     </div>
   </div>
