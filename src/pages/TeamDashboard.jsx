@@ -62,7 +62,7 @@ const TeamDashboard = () => {
   // Check if current user is admin or team lead
   const isTeamLead = currentUserId === team.teamLead;
   const isAdmin = currentUserRole === "admin";
-  const canCreateTask = isAdmin || isTeamLead;
+  const canCreateTask = isAdmin || isTeamLead || currentUserRole === "executive";
 
   const filteredTasks = team.teamTasks
     .filter((task) => {
