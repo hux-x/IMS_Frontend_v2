@@ -2,10 +2,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Plus, Trash2, Download, Check } from 'lucide-react';
 
-const ImageMarker = ({ imageFile, onSave, onClose }) => {
+const ImageMarker = ({ imageFile, originalImageFile, existingChecklist = [], onSave, onClose, imageIndex }) => {
   const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const [image, setImage] = useState(null);
+  const [image, setImage] = useState(null);          // The clean/original image (never has markers baked in)
   const [markers, setMarkers] = useState([]);
   const [checklist, setChecklist] = useState(['']);
   const [selectedMarker, setSelectedMarker] = useState(null);
@@ -13,10 +12,35 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    if (imageFile) {
-      loadImage(imageFile);
+    // Always load from the original (unmarked) source if available,
+    // otherwise fall back to whatever file was passed in.
+    const sourceFile = originalImageFile || imageFile;
+    if (sourceFile) {
+      loadImage(sourceFile);
     }
-  }, [imageFile]);
+  }, [imageFile, originalImageFile]);
+
+  // Load existing checklist items ONLY for this specific image when component mounts
+  useEffect(() => {
+    if (existingChecklist && existingChecklist.length > 0 && imageIndex !== null && imageIndex !== undefined) {
+      const prefix = `[Image ${imageIndex + 1}] `;
+      const relevantItems = existingChecklist
+        .filter(item => item.startsWith(prefix))
+        .map(item => item.replace(prefix, '').replace(/^\d+-\s*/, '')); // Remove "1- ", "2- " etc.
+      
+      if (relevantItems.length > 0) {
+        setChecklist(relevantItems);
+        // Create markers based on the number of checklist items
+        // Position them in a grid pattern on the canvas
+        const newMarkers = relevantItems.map((_, index) => ({
+          id: Date.now() + index,
+          x: 100 + (index % 3) * 150, // Grid pattern
+          y: 100 + Math.floor(index / 3) * 150
+        }));
+        setMarkers(newMarkers);
+      }
+    }
+  }, [existingChecklist, imageIndex]);
 
   const loadImage = (file) => {
     const reader = new FileReader();
@@ -24,22 +48,21 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
       const img = new Image();
       img.onload = () => {
         setImage(img);
-        // Calculate canvas size to fit the container while maintaining aspect ratio
         const maxWidth = 800;
         const maxHeight = 600;
-        
+
         let { width, height } = img;
-        
+
         if (width > maxWidth) {
           height = (height * maxWidth) / width;
           width = maxWidth;
         }
-        
+
         if (height > maxHeight) {
           width = (width * maxHeight) / height;
           height = maxHeight;
         }
-        
+
         setCanvasSize({ width, height });
       };
       img.src = e.target.result;
@@ -56,17 +79,16 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
   const drawCanvas = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
+
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
-    
-    // Clear canvas
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw image
+
+    // Always draw from the clean image — markers are only overlaid, never baked
     ctx.drawImage(image, 0, 0, canvasSize.width, canvasSize.height);
-    
-    // Draw markers
+
+    // Only draw markers for THIS image (they're all for this image since we filtered on load)
     markers.forEach((marker, index) => {
       drawMarker(ctx, marker.x, marker.y, index + 1, marker.id === selectedMarker);
     });
@@ -74,19 +96,16 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
 
   const drawMarker = (ctx, x, y, number, isSelected) => {
     const radius = 15;
-    
-    // Draw circle background
+
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, 2 * Math.PI);
     ctx.fillStyle = isSelected ? '#ef4444' : '#000000';
     ctx.fill();
-    
-    // Draw white border
+
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
-    
-    // Draw number
+
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 12px Arial';
     ctx.textAlign = 'center';
@@ -97,10 +116,14 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
 
-    // Check if clicked on existing marker
+    // Account for CSS scaling: the canvas pixel size vs its rendered size may differ
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    // Check if clicked on an existing marker
     const clickedMarker = markers.find(marker => {
       const distance = Math.sqrt((marker.x - x) ** 2 + (marker.y - y) ** 2);
       return distance <= 15;
@@ -109,12 +132,7 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
     if (clickedMarker) {
       setSelectedMarker(clickedMarker.id);
     } else {
-      // Add new marker
-      const newMarker = {
-        id: Date.now(),
-        x,
-        y
-      };
+      const newMarker = { id: Date.now(), x, y };
       setMarkers([...markers, newMarker]);
       setChecklist([...checklist, '']);
       setSelectedMarker(newMarker.id);
@@ -129,7 +147,6 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
 
   const addChecklistItem = () => {
     setChecklist([...checklist, '']);
-    // Add marker at center if no markers exist
     if (markers.length === checklist.length) {
       const newMarker = {
         id: Date.now(),
@@ -155,46 +172,55 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
     }
   };
 
+  /**
+   * Renders markers onto a fresh copy of the ORIGINAL image at its native resolution.
+   * This is only called at export time — the live canvas always redraws from `image`.
+   * FIX: Now preserves original format and uses efficient compression to avoid file size bloat.
+   */
   const createMarkedImage = () => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      
-      // Set canvas to original image size
+
+      // Use the original image's native size, not the (possibly bloated) marked version
       canvas.width = image.naturalWidth;
       canvas.height = image.naturalHeight;
-      
-      // Calculate scale factors
+
       const scaleX = image.naturalWidth / canvasSize.width;
       const scaleY = image.naturalHeight / canvasSize.height;
-      
-      // Draw original image
+
+      // Draw the clean original — no baked markers
       ctx.drawImage(image, 0, 0);
-      
-      // Draw markers at scaled positions
+
+      // Overlay markers at scaled positions
       markers.forEach((marker, index) => {
         const scaledX = marker.x * scaleX;
         const scaledY = marker.y * scaleY;
         const scaledRadius = 15 * Math.min(scaleX, scaleY);
-        
-        // Draw marker
+
         ctx.beginPath();
         ctx.arc(scaledX, scaledY, scaledRadius, 0, 2 * Math.PI);
         ctx.fillStyle = '#000000';
         ctx.fill();
-        
+
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2 * Math.min(scaleX, scaleY);
         ctx.stroke();
-        
+
         ctx.fillStyle = '#ffffff';
         ctx.font = `bold ${12 * Math.min(scaleX, scaleY)}px Arial`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText((index + 1).toString(), scaledX, scaledY);
       });
+
+      // FIX: Preserve original format and use high quality JPEG to reduce file size
+      // Only use PNG if original was PNG, otherwise use JPEG with 92% quality
+      const originalType = imageFile.type;
+      const outputType = originalType === 'image/png' ? 'image/png' : 'image/jpeg';
+      const quality = 0.92; // High quality but still compressed
       
-      canvas.toBlob(resolve, 'image/png');
+      canvas.toBlob(resolve, outputType, quality);
     });
   };
 
@@ -203,15 +229,15 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
     try {
       const markedImageBlob = await createMarkedImage();
       const markedImageFile = new File([markedImageBlob], `marked_${imageFile.name}`, {
-        type: 'image/png'
+        type: markedImageBlob.type // Use the blob's type instead of hardcoding PNG
       });
-      
-      // Format checklist with numbers
+
       const formattedChecklist = checklist
         .filter(item => item.trim() !== '')
         .map((item, index) => `${index + 1}- ${item}`);
-      
-      onSave(markedImageFile, formattedChecklist);
+
+      // Pass both the marked version (for display/upload) AND the original (for future edits)
+      onSave(markedImageFile, formattedChecklist, originalImageFile || imageFile);
     } catch (error) {
       console.error('Error creating marked image:', error);
       alert('Error processing image. Please try again.');
@@ -242,7 +268,7 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900">Mark Image</h3>
+            <h3 className="text-xl font-semibold text-gray-900">Mark Image {imageIndex !== null && imageIndex !== undefined ? `${imageIndex + 1}` : ''}</h3>
             <p className="text-sm text-gray-600">Click on the image to add markers</p>
           </div>
           <div className="flex items-center gap-2">
@@ -253,8 +279,8 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
             >
               <Download size={20} />
             </button>
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="p-2 text-gray-400 hover:text-black rounded-lg hover:bg-gray-100"
             >
               <X size={20} />
@@ -283,7 +309,7 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
               <h4 className="font-semibold text-gray-900">Checklist Items</h4>
               <p className="text-xs text-gray-600 mt-1">Each marker corresponds to a checklist item</p>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {checklist.map((item, index) => (
                 <div key={index} className="space-y-2">
@@ -310,7 +336,7 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
                   />
                 </div>
               ))}
-              
+
               <button
                 onClick={addChecklistItem}
                 className="w-full border-2 border-dashed border-gray-300 rounded-lg p-3 text-sm text-gray-600 hover:text-black hover:border-gray-400 transition-colors flex items-center justify-center"
@@ -339,7 +365,7 @@ const ImageMarker = ({ imageFile, onSave, onClose }) => {
                   </>
                 )}
               </button>
-              
+
               <button
                 onClick={onClose}
                 className="w-full border border-gray-300 text-gray-700 rounded-xl py-2 px-4 hover:bg-gray-100"

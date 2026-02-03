@@ -8,7 +8,6 @@ import TeamModal from '@/components/modals/TeamModal';
 const TeamCard = React.memo(({ team }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Memoize handlers to prevent recreation on every render
     const handleCardClick = useCallback(() => {
         setIsModalOpen(true);
     }, []);
@@ -17,7 +16,6 @@ const TeamCard = React.memo(({ team }) => {
         setIsModalOpen(false);
     }, []);
 
-    // Memoize computed values
     const membersArray = useMemo(() => 
         Array.isArray(team.members) ? team.members : [], 
         [team.members]
@@ -70,10 +68,9 @@ const TeamCard = React.memo(({ team }) => {
                             {membersArray.length} members
                         </div>
 
-                        {/* External link icon */}
                         <Link 
                             to={`/teamdashboard/${team._id || team.id}`} 
-                            onClick={(e) => e.stopPropagation()} // prevent card click
+                            onClick={(e) => e.stopPropagation()}
                             className="text-gray-500 hover:text-gray-700 transition-colors"
                             title="View team details"
                         >
@@ -99,10 +96,20 @@ const TeamCard = React.memo(({ team }) => {
                         {membersToShow.map((member, index) => (
                             <div
                                 key={member._id || member.id || index}
-                                className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 border-2 border-white font-semibold"
+                                className="w-8 h-8 rounded-full border-2 border-white overflow-hidden flex items-center justify-center"
                                 title={member.name}
                             >
-                                {member?.name?.charAt(0) || '?'}
+                                {member.profile_picture_url ? (
+                                    <img
+                                        src={member.profile_picture_url}
+                                        alt={member.name}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 font-semibold">
+                                        {member?.name?.charAt(0) || '?'}
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {remainingMembers > 0 && (
@@ -118,7 +125,6 @@ const TeamCard = React.memo(({ team }) => {
                 </div>
             </div>
 
-            {/* Team Modal */}
             {isModalOpen && (
                 <TeamModal 
                     team={team} 

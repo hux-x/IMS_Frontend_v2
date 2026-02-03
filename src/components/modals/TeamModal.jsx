@@ -49,23 +49,43 @@ const TeamModal = ({ team, onClose }) => {
                 Team Lead
               </h3>
               <div className="bg-white rounded-lg p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-400" />
-                  <span className="font-medium text-gray-900">{team.teamLead.name}</span>
-                  <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
-                    {team.teamLead.position}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                  {team.teamLead.email}
-                </div>
-                {team.teamLead.contact && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="h-4 w-4 text-gray-400">📞</span>
-                    {team.teamLead.contact}
+                <div className="flex items-center gap-3">
+                  {/* Lead avatar */}
+                  <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+                    {team.teamLead.profile_picture_url ? (
+                      <img
+                        src={team.teamLead.profile_picture_url}
+                        alt={team.teamLead.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-indigo-200 flex items-center justify-center text-sm font-semibold text-indigo-800">
+                        {team.teamLead.name?.charAt(0) || '?'}
+                      </div>
+                    )}
                   </div>
-                )}
+
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900">{team.teamLead.name}</span>
+                      {team.teamLead.position && (
+                        <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                          {team.teamLead.position}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      {team.teamLead.email}
+                    </div>
+                    {team.teamLead.contact && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <span className="h-4 w-4 text-gray-400">📞</span>
+                        {team.teamLead.contact}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -83,27 +103,46 @@ const TeamModal = ({ team, onClose }) => {
                   className="bg-gray-50 hover:bg-gray-100 rounded-lg p-4 transition-colors border border-gray-200"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="font-medium text-gray-900">{member.name}</span>
+                    <div className="flex items-start gap-3 flex-1">
+                      {/* Member avatar */}
+                      <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 mt-0.5">
+                        {member.profile_picture_url ? (
+                          <img
+                            src={member.profile_picture_url}
+                            alt={member.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700">
+                            {member.name?.charAt(0) || '?'}
+                          </div>
+                        )}
                       </div>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-3 w-3 text-gray-400" />
-                          <span>{member.position}</span>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-gray-900">{member.name}</span>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          {member.position && (
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="h-3 w-3 text-gray-400" />
+                              <span>{member.position}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3 text-gray-400" />
+                            <span className="truncate">{member.email}</span>
+                          </div>
+                          {member.contact && (
+                            <div className="flex items-center gap-2">
+                              <span className="h-3 w-3 text-gray-400">📞</span>
+                              <span>{member.contact}</span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3 w-3 text-gray-400" />
-                          <span className="truncate">{member.email}</span>
-                        </div>
-                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="h-4 w-4 text-gray-400">📞</span>
-                    {member.contact}
-                  </div>
                       </div>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
+
+                    <span className={`text-xs px-2 py-1 rounded-full flex-shrink-0 ml-2 ${
                       member.role === 'admin' 
                         ? 'bg-purple-100 text-purple-700'
                         : 'bg-blue-100 text-blue-700'

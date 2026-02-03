@@ -30,6 +30,7 @@ const Teams = () => {
         email: team.teamLead.username,
         role: team.teamLead.role,
         position: team.teamLead.position,
+        profile_picture_url:team.teamLead.profile_picture_url
       } : null,
       members: (team.members || []).map((member) => ({
         id: member._id,
@@ -37,6 +38,7 @@ const Teams = () => {
         email: member.username,
         role: member.role,
         position: member.position,
+        profile_picture_url:member.profile_picture_url
       })),
       createdBy: team.createdBy ? {
         id: team.createdBy._id,
@@ -44,6 +46,7 @@ const Teams = () => {
         email: team.createdBy.username,
         role: team.createdBy.role,
         position: team.createdBy.position,
+        profile_picture_url:team.createdBy.profile_picture_url
       } : null,
       color: generateTeamColor(team._id),
       createdAt: new Date(team.createdAt).toLocaleDateString(),

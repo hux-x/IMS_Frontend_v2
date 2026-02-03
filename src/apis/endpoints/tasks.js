@@ -15,8 +15,6 @@ export const createTask = async (
     // Create FormData to handle file uploads
     const formData = new FormData();
     
-    console.log(assignedTo, title, deadline, teamId, todoChecklist, "TESTINGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
-    
     // Append all task data
     // Handle assignedTo as array - append each ID separately
     if (Array.isArray(assignedTo) && assignedTo.length > 0) {

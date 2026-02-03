@@ -16,7 +16,6 @@ import {
   AlertCircle,
   Briefcase,
   X,
-  Eye
 } from "lucide-react";
 import TaskCard from "@/components/cards/TaskCard";
 import TeamCard from "@/components/cards/EmployeeTeamCard";
@@ -34,7 +33,7 @@ const Dashboard = () => {
   const { userRole } = useContext(AuthContext);
 
   // Check if user is admin or teamLead
-  const isAdminOrLead = userRole === 'admin' || userRole === 'teamLead';
+  const isAdminOrLead = ["admin","executive"].includes(userRole);
 
   // Enhanced update handler with page refresh
   const handleTaskUpdate = async (taskId, updateData) => {
@@ -91,7 +90,6 @@ const Dashboard = () => {
   const meetings = dashboard?.meetings || [];
   const meetingCount = dashboard?.meetingCount || 0;
   const notification = dashboard?.announcement || null; // Get notification data
-  console.log(notification);
 
   // Check if the notification is expired
   let isExpired = false;

@@ -1,17 +1,13 @@
 // src/components/team/TeamCard.jsx
 import React from 'react';
-import { FaCrown, FaUsers, FaEllipsisV, FaExternalLinkAlt } from 'react-icons/fa';
+import { FaCrown, FaUsers, FaExternalLinkAlt } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const TeamCard = ({ team, onClick }) => {
-    const getInitials = (name) => {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase();
-    };
-    console.log(team, "TEAM DATA IN CARDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd");
     const membersArray = Array.isArray(team.members) ? team.members : [];
     const membersToShow = membersArray.slice(0, 3);
     const remainingMembers = membersArray.length - membersToShow.length;
-
+    console.log(team.members,"MEMBERS")
     return (
         <div 
             className="bg-white rounded-lg shadow-md p-6 flex flex-col cursor-pointer hover:shadow-lg transition-shadow duration-200 ease-in-out"
@@ -30,10 +26,9 @@ const TeamCard = ({ team, onClick }) => {
                         {membersArray.length} members
                     </div>
 
-                    {/* External link icon */}
                     <Link 
                         to={`/teamdashboard/${team._id || team.id}`} 
-                        onClick={(e) => e.stopPropagation()} // prevent card click
+                        onClick={(e) => e.stopPropagation()}
                         className="text-gray-500 hover:text-gray-700"
                         title="View team details"
                     >
@@ -57,10 +52,20 @@ const TeamCard = ({ team, onClick }) => {
                     {membersToShow.map((member) => (
                         <div
                             key={member.id}
-                            className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs text-gray-700 border-2 border-white"
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs text-gray-700 border-2 border-white overflow-hidden"
                             title={member.name}
                         >
-                            {member?.name?.charAt(0)}
+                            {member.profile_picture_url ? (
+                                <img
+                                    src={member.profile_picture_url}
+                                    alt={member.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                                    {member?.name?.charAt(0)}
+                                </div>
+                            )}
                         </div>
                     ))}
                     {remainingMembers > 0 && (

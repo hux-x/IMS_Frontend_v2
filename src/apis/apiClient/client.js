@@ -4,7 +4,7 @@ import { getToken } from "@/apis/localStorage/tokenStorage";
 
 const client = axios.create({
   baseURL: "https://temp.devbuns.com/api",
-  timeout: 30000, // Increased timeout for file uploads
+  timeout: 50000, // Increased timeout for file uploads
   headers: {
     "Content-Type": "application/json",
   }

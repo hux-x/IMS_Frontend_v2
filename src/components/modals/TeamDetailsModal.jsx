@@ -16,7 +16,8 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                     name: team.lead?.name,
                     email: team.lead?.email,
                     role: team.lead?.role,
-                    position: team.lead?.position
+                    position: team.lead?.position,
+                    profile_picture_url: team.lead?.profile_picture_url
                 },
                 members: team.members || []
             });
@@ -29,6 +30,31 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
     const getInitials = (name) => {
         if (!name) return '?';
         return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    // Reusable avatar component
+    const Avatar = ({ person, size = 'sm', bgColor = 'bg-gray-200' }) => {
+        const sizeClasses = {
+            xs: 'w-6 h-6 text-xs',
+            sm: 'w-8 h-8 text-sm',
+            md: 'w-12 h-12 text-xl',
+            lg: 'w-20 h-20 text-4xl'
+        };
+        return (
+            <div className={`${sizeClasses[size]} rounded-full flex items-center justify-center overflow-hidden`}>
+                {person?.profile_picture_url ? (
+                    <img
+                        src={person.profile_picture_url}
+                        alt={person.name}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className={`w-full h-full ${bgColor} flex items-center justify-center text-gray-700 font-semibold`}>
+                        {getInitials(person?.name)}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     const handleEditChange = (e) => {
@@ -93,7 +119,8 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                     name: selectedUser.name,
                     email: selectedUser.email || selectedUser.username,
                     role: selectedUser.role,
-                    position: selectedUser.position
+                    position: selectedUser.position,
+                    profile_picture_url: selectedUser.profile_picture_url
                 }
             }));
         }
@@ -117,8 +144,8 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                     </h4>
                     {team.lead ? (
                         <div className="flex items-center p-3 bg-blue-50 rounded-md">
-                            <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-sm font-semibold mr-3">
-                                {getInitials(team.lead.name)}
+                            <div className="mr-3">
+                                <Avatar person={team.lead} size="sm" bgColor="bg-blue-200" />
                             </div>
                             <div>
                                 <p className="font-medium text-gray-800">{team.lead.name}</p>
@@ -157,8 +184,8 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {team.members.map(member => (
                             <div key={member.id || member._id} className="flex items-center p-2 bg-gray-50 rounded-md">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold mr-3">
-                                    {getInitials(member.name)}
+                                <div className="mr-3">
+                                    <Avatar person={member} size="sm" bgColor="bg-gray-200" />
                                 </div>
                                 <div>
                                     <p className="font-medium text-gray-800">{member.name}</p>
@@ -246,8 +273,8 @@ const TeamDetailsModal = ({ isOpen, onClose, team, allUsers, onUpdateTeam, onDel
                                 htmlFor={`edit-member-${user.id || user._id}`} 
                                 className="ml-2 flex items-center text-sm text-gray-700"
                             >
-                                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold mr-2">
-                                    {getInitials(user.name)}
+                                <div className="mr-2">
+                                    <Avatar person={user} size="xs" bgColor="bg-gray-200" />
                                 </div>
                                 {user.name}
                             </label>
