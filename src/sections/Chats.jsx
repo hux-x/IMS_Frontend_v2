@@ -1,9 +1,22 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "@/context/authContext";
-import socketService, { connectSocket, disconnectSocket } from "@/apis/socket/config";
+import socketService, {
+  connectSocket,
+  disconnectSocket,
+} from "@/apis/socket/config";
 import chatService from "@/apis/services/chatService";
-import { MessageSquare, Users, Send, Paperclip, X, Reply, Loader2, Info, FolderOpen } from "lucide-react";
+import {
+  MessageSquare,
+  Users,
+  Send,
+  Paperclip,
+  X,
+  Reply,
+  Loader2,
+  Info,
+  FolderOpen,
+} from "lucide-react";
 import { ToastContainer } from "@/components/layout/Toast";
 import GroupInfoModal from "@/components/modals/GroupChatModal";
 import GroupChatModal from "@/components/modals/GroupChatModal";
@@ -12,6 +25,7 @@ import UploadFilesModal from "@/components/modals/UploadFileModal";
 import ChatSidebar from "@/components/chats/ChatSidebar";
 import UploadProgressToast from "@/components/ui/UploadProgressToast";
 import ChatMessages from "@/components/chats/MessageArea";
+import MentionInput from "@/components/chats/MentionInput";
 import { formatFileSize, formatTime } from "@/components/utils/utils";
 
 // ============================================================================
@@ -38,13 +52,16 @@ const ChatPage = () => {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [unreadMessages, setUnreadMessages] = useState(new Map());
+  const [unreadMentions, setUnreadMentions] = useState(new Set());
+  const [mentionedUsers, setMentionedUsers] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [uploadProgress, setUploadProgress] = useState([]);
+  console.log(mentionedUsers,"MENTIONED USERSSSSSSSSSSSS")
 
   // Infinite Scroll States
   const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
-  const [cursors, setCursors] = useState(new Map()); // chatId -> cursor
-  const [hasMoreMessages, setHasMoreMessages] = useState(new Map()); // chatId -> boolean
+  const [cursors, setCursors] = useState(new Map());
+  const [hasMoreMessages, setHasMoreMessages] = useState(new Map());
 
   // Modal States
   const [showNewChat, setShowNewChat] = useState(false);
@@ -121,12 +138,15 @@ const ChatPage = () => {
 
     if (selectedChat.isGroupChat) {
       const typingUserNames = selectedChat.users
-        ?.filter((u) => u && u._id && chatTypers.has(u._id) && u._id !== user?._id)
+        ?.filter(
+          (u) => u && u._id && chatTypers.has(u._id) && u._id !== user?._id
+        )
         .map((u) => u.name)
         .slice(0, 2);
 
       if (!typingUserNames || typingUserNames.length === 0) return "";
-      if (typingUserNames.length === 1) return `${typingUserNames[0]} is typing...`;
+      if (typingUserNames.length === 1)
+        return `${typingUserNames[0]} is typing...`;
       return `${typingUserNames[0]} and ${typingUserNames[1]} are typing...`;
     } else {
       const otherUser = getOtherUser(selectedChat);
@@ -136,173 +156,208 @@ const ChatPage = () => {
   };
 
   // ============================================================================
+  // MENTION FUNCTIONS
+  // ============================================================================
+
+  const handleMentionSelect = (user) => {
+    setMentionedUsers((prev) => {
+      const exists = prev.find((u) => u._id === user._id);
+      if (exists) return prev;
+      return [...prev, user];
+    });
+  };
+
+  const handleMentionClick = (mentionedUser) => {
+    // Find or create a chat with the mentioned user
+    const existingChat = chats.find(
+      (chat) =>
+        !chat.isGroupChat &&
+        chat.users.some((u) => u._id === mentionedUser._id)
+    );
+
+    if (existingChat) {
+      handleChatSelect(existingChat);
+    } else {
+      handleStartNewChat(mentionedUser);
+    }
+  };
+
+  const clearMentionForMessage = async (messageId, chatId) => {
+    // Remove mention indicator from state
+    setUnreadMentions((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(chatId);
+      return newSet;
+    });
+
+    // Optionally, you can call an API to mark mentions as read
+    // await chatService.markMentionAsRead(messageId);
+  };
+
+  // ============================================================================
   // INFINITE SCROLL FUNCTIONS
   // ============================================================================
 
- // FIXED VERSION - Prevents infinite loop on second pagination
+  const loadOlderMessages = async (chatId) => {
+    if (loadingOlderMessages) {
+      console.log("⚠️ Already loading messages, skipping");
+      return;
+    }
 
-const loadOlderMessages = async (chatId) => {
-  // Prevent concurrent loads
-  if (loadingOlderMessages) {
-    console.log("⚠️ Already loading messages, skipping");
-    return;
-  }
+    const hasMore = hasMoreMessages.get(chatId);
+    if (hasMore === false) {
+      console.log("⚠️ No more messages to load for chat:", chatId);
+      return;
+    }
 
-  // Check if there are more messages to load
-  const hasMore = hasMoreMessages.get(chatId);
-  if (hasMore === false) {
-    console.log("⚠️ No more messages to load for chat:", chatId);
-    return;
-  }
-
-  const cursor = cursors.get(chatId);
-  console.log("📜 Loading older messages for chat:", chatId, "with cursor:", cursor);
-  
-  setLoadingOlderMessages(true);
-
-  try {
-    const container = messageContainerRef.current;
-    const previousScrollHeight = container?.scrollHeight || 0;
-    const previousScrollTop = container?.scrollTop || 0;
-
-    // CRITICAL FIX: Explicitly pass limit as 20
-    const response = await chatService.getMessages(chatId, 20, cursor);
-    
-    // Handle nested response structure
-    const responseData = response.data?.data || response.data;
-    const newMessages = responseData?.messages || [];
-    const totalMessages = responseData?.totalMessages || 0;
-    const returnedLimit = responseData?.limit || 20;
-    const nextCursor = responseData?.nextCursor || null;
-    const backendHasMore = responseData?.hasMore;
-
-    console.log("📦 Pagination response:", {
-      newMessagesCount: newMessages.length,
-      totalMessages,
-      returnedLimit,
-      nextCursor,
-      backendHasMore,
+    const cursor = cursors.get(chatId);
+    console.log(
+      "📜 Loading older messages for chat:",
+      chatId,
+      "with cursor:",
       cursor
-    });
+    );
 
-    if (newMessages && newMessages.length > 0) {
-      // Update cached messages
-      setChatMessages((prevMap) => {
-        const newMap = new Map(prevMap);
-        const existingMessages = newMap.get(chatId) || [];
-        
-        // Create a Set of existing message IDs for efficient duplicate checking
-        const existingIds = new Set(existingMessages.map(m => m._id));
-        
-        // Filter out duplicates
-        const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m._id));
-        
-        if (uniqueNewMessages.length === 0) {
-          console.log("⚠️ All messages were duplicates");
-          return prevMap;
-        }
-        
-        // Prepend unique new messages (they are older)
-        const updatedMessages = [...uniqueNewMessages, ...existingMessages];
-        newMap.set(chatId, updatedMessages);
-        
-        console.log("💾 Cache updated:", {
-          chatId,
-          newUnique: uniqueNewMessages.length,
-          totalCached: updatedMessages.length
-        });
-        
-        return newMap;
+    setLoadingOlderMessages(true);
+
+    try {
+      const container = messageContainerRef.current;
+      const previousScrollHeight = container?.scrollHeight || 0;
+      const previousScrollTop = container?.scrollTop || 0;
+
+      const response = await chatService.getMessages(chatId, 20, cursor);
+
+      const responseData = response.data?.data || response.data;
+      const newMessages = responseData?.messages || [];
+      const totalMessages = responseData?.totalMessages || 0;
+      const returnedLimit = responseData?.limit || 20;
+      const nextCursor = responseData?.nextCursor || null;
+      const backendHasMore = responseData?.hasMore;
+
+      console.log("📦 Pagination response:", {
+        newMessagesCount: newMessages.length,
+        totalMessages,
+        returnedLimit,
+        nextCursor,
+        backendHasMore,
+        cursor,
       });
 
-      // Update displayed messages ONLY if this is still the selected chat
-      setMessages((prev) => {
-        const currentChatId = selectedChat?._id;
-        if (currentChatId !== chatId) {
-          console.log("⚠️ Chat changed during load, not updating display");
-          return prev;
-        }
-        
-        // Filter out duplicates
-        const existingIds = new Set(prev.map(m => m._id));
-        const uniqueNewMessages = newMessages.filter(m => !existingIds.has(m._id));
-        
-        if (uniqueNewMessages.length === 0) {
-          return prev;
-        }
-        
-        return [...uniqueNewMessages, ...prev];
-      });
+      if (newMessages && newMessages.length > 0) {
+        setChatMessages((prevMap) => {
+          const newMap = new Map(prevMap);
+          const existingMessages = newMap.get(chatId) || [];
 
-      // CRITICAL FIX: Use nextCursor from backend response
-      const finalNextCursor = nextCursor || (newMessages.length > 0 ? newMessages[0]._id : null);
-      
-      // CRITICAL FIX: Trust backend's hasMore, or calculate conservatively
-      const finalHasMore = typeof backendHasMore === 'boolean' 
-        ? backendHasMore 
-        : (newMessages.length >= returnedLimit);
+          const existingIds = new Set(existingMessages.map((m) => m._id));
+          const uniqueNewMessages = newMessages.filter(
+            (m) => !existingIds.has(m._id)
+          );
 
-      console.log("📊 Next pagination state:", {
-        finalNextCursor,
-        finalHasMore,
-        source: typeof backendHasMore === 'boolean' ? 'backend' : 'calculated'
-      });
+          if (uniqueNewMessages.length === 0) {
+            console.log("⚠️ All messages were duplicates");
+            return prevMap;
+          }
 
-      // Update cursor for next load
-      setCursors((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(chatId, finalNextCursor);
-        return newMap;
-      });
+          const updatedMessages = [...uniqueNewMessages, ...existingMessages];
+          newMap.set(chatId, updatedMessages);
 
-      // Update hasMore flag
-      setHasMoreMessages((prev) => {
-        const newMap = new Map(prev);
-        newMap.set(chatId, finalHasMore);
-        return newMap;
-      });
-
-      // Restore scroll position with safety margin
-      setTimeout(() => {
-        if (container && messageContainerRef.current === container) {
-          const newScrollHeight = container.scrollHeight;
-          const scrollDiff = newScrollHeight - previousScrollHeight;
-          
-          // Safety margin to prevent immediate re-trigger
-          const safeScrollTop = Math.max(previousScrollTop + scrollDiff, 200);
-          container.scrollTop = safeScrollTop;
-          
-          console.log("📍 Scroll restored:", {
-            previousScrollTop,
-            scrollDiff,
-            newScrollTop: container.scrollTop,
-            safetyMargin: 200
+          console.log("💾 Cache updated:", {
+            chatId,
+            newUnique: uniqueNewMessages.length,
+            totalCached: updatedMessages.length,
           });
-        }
-      }, 50);
 
-      console.log("✅ Loaded", newMessages.length, "older messages. Has more:", finalHasMore);
-    } else {
-      // No more messages
-      console.log("🏁 No messages returned, marking as complete");
+          return newMap;
+        });
+
+        setMessages((prev) => {
+          const currentChatId = selectedChat?._id;
+          if (currentChatId !== chatId) {
+            console.log("⚠️ Chat changed during load, not updating display");
+            return prev;
+          }
+
+          const existingIds = new Set(prev.map((m) => m._id));
+          const uniqueNewMessages = newMessages.filter(
+            (m) => !existingIds.has(m._id)
+          );
+
+          if (uniqueNewMessages.length === 0) {
+            return prev;
+          }
+
+          return [...uniqueNewMessages, ...prev];
+        });
+
+        const finalNextCursor =
+          nextCursor || (newMessages.length > 0 ? newMessages[0]._id : null);
+
+        const finalHasMore =
+          typeof backendHasMore === "boolean"
+            ? backendHasMore
+            : newMessages.length >= returnedLimit;
+
+        console.log("📊 Next pagination state:", {
+          finalNextCursor,
+          finalHasMore,
+          source:
+            typeof backendHasMore === "boolean" ? "backend" : "calculated",
+        });
+
+        setCursors((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(chatId, finalNextCursor);
+          return newMap;
+        });
+
+        setHasMoreMessages((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(chatId, finalHasMore);
+          return newMap;
+        });
+
+        setTimeout(() => {
+          if (container && messageContainerRef.current === container) {
+            const newScrollHeight = container.scrollHeight;
+            const scrollDiff = newScrollHeight - previousScrollHeight;
+
+            const safeScrollTop = Math.max(previousScrollTop + scrollDiff, 200);
+            container.scrollTop = safeScrollTop;
+
+            console.log("📍 Scroll restored:", {
+              previousScrollTop,
+              scrollDiff,
+              newScrollTop: container.scrollTop,
+              safetyMargin: 200,
+            });
+          }
+        }, 50);
+
+        console.log(
+          "✅ Loaded",
+          newMessages.length,
+          "older messages. Has more:",
+          finalHasMore
+        );
+      } else {
+        console.log("🏁 No messages returned, marking as complete");
+        setHasMoreMessages((prev) => {
+          const newMap = new Map(prev);
+          newMap.set(chatId, false);
+          return newMap;
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error loading older messages:", error);
       setHasMoreMessages((prev) => {
         const newMap = new Map(prev);
         newMap.set(chatId, false);
         return newMap;
       });
+    } finally {
+      setLoadingOlderMessages(false);
     }
-  } catch (error) {
-    console.error("❌ Error loading older messages:", error);
-    // On error, don't try again
-    setHasMoreMessages((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(chatId, false);
-      return newMap;
-    });
-  } finally {
-    setLoadingOlderMessages(false);
-  }
-};
+  };
 
   // ============================================================================
   // DATA LOADING
@@ -327,76 +382,86 @@ const loadOlderMessages = async (chatId) => {
 
       const messagesMap = new Map();
       const unreadMap = new Map();
+      const mentionsSet = new Set();
       const cursorsMap = new Map();
       const hasMoreMap = new Map();
 
-      // CORRECTED loadInitialData SECTION
-// Replace the Promise.all section in loadInitialData that loads messages for each chat
+      await Promise.all(
+        chatsData.map(async (chat) => {
+          try {
+            const response = await chatService.getMessages(chat._id, 20);
 
-await Promise.all(
-  chatsData.map(async (chat) => {
-    try {
-      // CRITICAL FIX: Explicitly pass limit as 20 for consistency
-      const response = await chatService.getMessages(chat._id, 20); // Changed from 10 to 20
-      
-      const responseData = response.data?.data || response.data;
-      const messagesData = responseData?.messages || [];
-      const totalMessages = responseData?.totalMessages || 0;
-      const limit = responseData?.limit || 20;
-      const nextCursor = responseData?.nextCursor;
-      const backendHasMore = responseData?.hasMore;
+            const responseData = response.data?.data || response.data;
+            const messagesData = responseData?.messages || [];
+            const limit = responseData?.limit || 20;
+            const nextCursor = responseData?.nextCursor;
+            const backendHasMore = responseData?.hasMore;
 
-      console.log("📨 Initial load for chat:", chat._id, {
-        messagesCount: messagesData.length,
-        totalMessages,
-        limit,
-        nextCursor,
-        backendHasMore
-      });
+            if (messagesData && Array.isArray(messagesData)) {
+              messagesMap.set(chat._id, messagesData);
 
-      if (messagesData && Array.isArray(messagesData)) {
-        messagesMap.set(chat._id, messagesData);
+              const finalNextCursor =
+                nextCursor ||
+                (messagesData.length > 0 ? messagesData[0]._id : null);
 
-        // CRITICAL FIX: Use nextCursor from backend
-        const finalNextCursor = nextCursor || (messagesData.length > 0 ? messagesData[0]._id : null);
-        
-        // CRITICAL FIX: Use hasMore from backend or calculate conservatively
-        const finalHasMore = typeof backendHasMore === 'boolean'
-          ? backendHasMore
-          : (messagesData.length >= limit);
+              const finalHasMore =
+                typeof backendHasMore === "boolean"
+                  ? backendHasMore
+                  : messagesData.length >= limit;
 
-        cursorsMap.set(chat._id, finalNextCursor);
-        hasMoreMap.set(chat._id, finalHasMore);
+              cursorsMap.set(chat._id, finalNextCursor);
+              hasMoreMap.set(chat._id, finalHasMore);
 
-        console.log("📊 Initial pagination state for chat:", chat._id, {
-          cursor: finalNextCursor,
-          hasMore: finalHasMore
-        });
+              console.log("📊 Initial pagination state for chat:", chat._id, {
+                cursor: finalNextCursor,
+                hasMore: finalHasMore,
+              });
 
-        const unread = messagesData.filter(
-          (m) => m.sender._id !== user?._id && !m.isRead
-        ).length;
+              const unread = messagesData.filter(
+                (m) => m.sender._id !== user?._id && !m.isRead
+              ).length;
 
-        if (unread > 0) unreadMap.set(chat._id, unread);
-      }
-    } catch (error) {
-      console.error("Error loading messages for chat:", chat._id, error);
-      messagesMap.set(chat._id, []);
-      cursorsMap.set(chat._id, null);
-      hasMoreMap.set(chat._id, false);
-    }
-  })
-);
+              if (unread > 0) unreadMap.set(chat._id, unread);
+
+              // Check for unread mentions
+              const hasMentions = messagesData.some(
+                (m) =>
+                  m.mention?.some((mention) => mention._id === user?._id) &&
+                  m.sender._id !== user?._id &&
+                  !m.isRead
+              );
+
+              if (hasMentions) {
+                mentionsSet.add(chat._id);
+              }
+            }
+          } catch (error) {
+            console.error("Error loading messages for chat:", chat._id, error);
+            messagesMap.set(chat._id, []);
+            cursorsMap.set(chat._id, null);
+            hasMoreMap.set(chat._id, false);
+          }
+        })
+      );
 
       setChatMessages(messagesMap);
       setCursors(cursorsMap);
       setHasMoreMessages(hasMoreMap);
       setUnreadMessages(unreadMap);
-      const totalUnread = Array.from(unreadMap.values()).reduce((acc, val) => acc + val, 0);
+      setUnreadMentions(mentionsSet);
+
+      const totalUnread = Array.from(unreadMap.values()).reduce(
+        (acc, val) => acc + val,
+        0
+      );
       setUnread(totalUnread);
 
       setTimeout(() => {
-        console.log("🔍 Requesting online status for", usersData.length, "users");
+        console.log(
+          "🔍 Requesting online status for",
+          usersData.length,
+          "users"
+        );
         usersData.forEach((userData) => {
           if (userData._id !== user?._id) {
             socketService.getUserOnlineStatus(userData._id);
@@ -405,9 +470,14 @@ await Promise.all(
       }, 1000);
 
       if (location.state?.selectedChatId) {
-        const chatToSelect = chatsData.find((c) => c._id === location.state.selectedChatId);
+        const chatToSelect = chatsData.find(
+          (c) => c._id === location.state.selectedChatId
+        );
         if (chatToSelect) {
-          console.log("📍 Auto-selecting chat from notification:", location.state.selectedChatId);
+          console.log(
+            "📍 Auto-selecting chat from notification:",
+            location.state.selectedChatId
+          );
           setTimeout(() => handleChatSelect(chatToSelect), 500);
         }
         window.history.replaceState({}, document.title);
@@ -424,91 +494,129 @@ await Promise.all(
   // ============================================================================
   // SOCKET EVENT HANDLERS
   // ============================================================================
+const handleNewMessage = (message) => {
+  console.log("💬 Message received:", message);
 
-  const handleNewMessage = (message) => {
-    console.log("💬 Message received:", message);
+  let messageChatId;
+  if (typeof message.chat === "object" && message.chat !== null) {
+    messageChatId = message.chat._id?.toString() || message.chat.toString();
+  } else {
+    messageChatId = message.chat?.toString();
+  }
 
-    let messageChatId;
-    if (typeof message.chat === "object" && message.chat !== null) {
-      messageChatId = message.chat._id?.toString() || message.chat.toString();
-    } else {
-      messageChatId = message.chat?.toString();
+  const selectedChatId = selectedChat?._id?.toString();
+  const isCurrentChat = selectedChatId && messageChatId === selectedChatId;
+
+  // Check if current user is mentioned (check both 'mention' and 'mentions' fields)
+  const isMentioned = message.mention?.some((m) => m._id === user?._id) || 
+                      message.mentions?.some((m) => m._id === user?._id);
+
+  console.log("🏷️ Mention check:", { 
+    isMentioned, 
+    mentions: message.mentions, 
+    mention: message.mention,
+    userId: user?._id 
+  });
+
+  setChatMessages((prev) => {
+    const newMap = new Map(prev);
+    const chatMsgs = newMap.get(messageChatId) || [];
+    const exists = chatMsgs.some((m) => m._id === message._id);
+    if (!exists) {
+      newMap.set(messageChatId, [...chatMsgs, message]);
+    }
+    return newMap;
+  });
+
+  setChats((prev) => {
+    const chatIndex = prev.findIndex((c) => c._id === messageChatId);
+    if (chatIndex === -1) return prev;
+
+    const updatedChats = [...prev];
+    const chatToUpdate = { ...updatedChats[chatIndex] };
+    chatToUpdate.latestMessage = message;
+
+    updatedChats.splice(chatIndex, 1);
+    updatedChats.unshift(chatToUpdate);
+
+    return updatedChats;
+  });
+
+  if (isCurrentChat) {
+    setMessages((prev) => {
+      const exists = prev.some((m) => m._id === message._id);
+      if (exists) return prev;
+      return [...prev, message];
+    });
+
+    setTimeout(() => scrollToBottom(), 100);
+
+    if (message.sender._id !== user?._id) {
+      socketService.markMessageAsRead(message._id, user._id);
     }
 
-    const selectedChatId = selectedChat?._id?.toString();
-    const isCurrentChat = selectedChatId && messageChatId === selectedChatId;
+    // Clear mention indicator if mentioned in current chat
+    if (isMentioned) {
+      clearMentionForMessage(message._id, messageChatId);
+    }
+  } else {
+    if (message.sender._id !== user?._id) {
+      console.log("📬 Incrementing unread count for chat:", messageChatId);
 
-    setChatMessages((prev) => {
-      const newMap = new Map(prev);
-      const chatMsgs = newMap.get(messageChatId) || [];
-      const exists = chatMsgs.some((m) => m._id === message._id);
-      if (!exists) {
-        newMap.set(messageChatId, [...chatMsgs, message]);
-      }
-      return newMap;
-    });
+      setUnreadMessages((prev) => {
+        const newMap = new Map(prev);
+        const current = newMap.get(messageChatId) || 0;
+        newMap.set(messageChatId, current + 1);
 
-    setChats((prev) => {
-      const chatIndex = prev.findIndex((c) => c._id === messageChatId);
-      if (chatIndex === -1) return prev;
+        const totalUnread = Array.from(newMap.values()).reduce(
+          (acc, val) => acc + val,
+          0
+        );
+        setUnread(totalUnread);
 
-      const updatedChats = [...prev];
-      const chatToUpdate = { ...updatedChats[chatIndex] };
-      chatToUpdate.latestMessage = message;
-
-      updatedChats.splice(chatIndex, 1);
-      updatedChats.unshift(chatToUpdate);
-
-      return updatedChats;
-    });
-
-    if (isCurrentChat) {
-      setMessages((prev) => {
-        const exists = prev.some((m) => m._id === message._id);
-        if (exists) return prev;
-        return [...prev, message];
+        return newMap;
       });
 
-      setTimeout(() => scrollToBottom(), 100);
-
-      if (message.sender._id !== user?._id) {
-        socketService.markMessageAsRead(message._id, user._id);
+      // Add mention indicator
+      if (isMentioned) {
+        console.log("✨ Adding mention indicator for chat:", messageChatId);
+        setUnreadMentions((prev) => new Set([...prev, messageChatId]));
       }
-    } else {
-      if (message.sender._id !== user?._id) {
-        console.log("📬 Incrementing unread count for chat:", messageChatId);
 
-        setUnreadMessages((prev) => {
-          const newMap = new Map(prev);
-          const current = newMap.get(messageChatId) || 0;
-          newMap.set(messageChatId, current + 1);
+      // Show toast notification - enhanced for mentions
+      console.log("🔔 Showing toast:", { isMentioned, sender: message.sender.name });
+      addToast(
+        message.message, 
+        message.sender.name, 
+        messageChatId,
+        isMentioned // Pass the isMention flag
+      );
 
-          const totalUnread = Array.from(newMap.values()).reduce((acc, val) => acc + val, 0);
-          setUnread(totalUnread);
+      if ("Notification" in window && Notification.permission === "granted") {
+        const notificationBody = isMentioned
+          ? `${message.sender.name} mentioned you: ${message.message}`
+          : message.message;
 
-          return newMap;
-        });
-
-        addToast(message.message, message.sender.name, messageChatId);
-
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification(`New message from ${message.sender.name}`, {
-            body: message.message,
+        new Notification(
+          `New message from ${message.sender.name}`,
+          {
+            body: notificationBody,
             icon: "/logo.png",
             tag: messageChatId,
-          });
-        }
+          }
+        );
+      }
 
-        try {
-          const audio = new Audio("/notification.mp3");
-          audio.volume = 0.5;
-          audio.play().catch((e) => console.log("Audio play failed:", e));
-        } catch (error) {
-          console.log("Notification sound error:", error);
-        }
+      try {
+        const audio = new Audio("/notification.mp3");
+        audio.volume = 0.5;
+        audio.play().catch((e) => console.log("Audio play failed:", e));
+      } catch (error) {
+        console.log("Notification sound error:", error);
       }
     }
-  };
+  }
+};
 
   const handleUserTyping = ({ userId: typingUserId, chatId }) => {
     if (typingUserId !== user?._id) {
@@ -588,7 +696,9 @@ await Promise.all(
   };
 
   const handleUserOnlineStatus = ({ userId: statusUserId, isOnline }) => {
-    console.log(`🔍 User status: ${statusUserId} is ${isOnline ? "online" : "offline"}`);
+    console.log(
+      `🔍 User status: ${statusUserId} is ${isOnline ? "online" : "offline"}`
+    );
     if (isOnline) {
       setOnlineUsers((prev) => new Set([...prev, statusUserId]));
     } else {
@@ -605,13 +715,19 @@ await Promise.all(
     setChatMessages((prev) => {
       const newMap = new Map(prev);
       for (const [chatId, msgs] of newMap.entries()) {
-        const updated = msgs.map((m) => (m._id === messageId ? { ...m, isRead: true } : m));
+        const updated = msgs.map((m) =>
+          m._id === messageId ? { ...m, isRead: true } : m
+        );
         newMap.set(chatId, updated);
       }
       return newMap;
     });
 
-    setMessages((prev) => prev.map((msg) => (msg._id === messageId ? { ...msg, isRead: true } : msg)));
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg._id === messageId ? { ...msg, isRead: true } : msg
+      )
+    );
   };
 
   const handleInitialOnlineUsers = ({ users }) => {
@@ -632,19 +748,33 @@ await Promise.all(
 
     setSelectedChat(chat);
 
+    // Clear unread count and mentions
     setUnreadMessages((prev) => {
       const newMap = new Map(prev);
       newMap.delete(chat._id);
 
-      const totalUnread = Array.from(newMap.values()).reduce((acc, val) => acc + val, 0);
+      const totalUnread = Array.from(newMap.values()).reduce(
+        (acc, val) => acc + val,
+        0
+      );
       setUnread(totalUnread);
 
       return newMap;
     });
 
-    // Load messages from cache for this specific chat
+    setUnreadMentions((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(chat._id);
+      return newSet;
+    });
+
     const cachedMessages = chatMessages.get(chat._id) || [];
-    console.log("💾 Loading cached messages for chat:", chat._id, "Count:", cachedMessages.length);
+    console.log(
+      "💾 Loading cached messages for chat:",
+      chat._id,
+      "Count:",
+      cachedMessages.length
+    );
     setMessages(cachedMessages);
 
     cachedMessages.forEach((msg) => {
@@ -654,7 +784,6 @@ await Promise.all(
       }
     });
 
-    // Scroll to bottom after a short delay to ensure messages are rendered
     setTimeout(() => {
       scrollToBottom("auto");
       chatSwitchingRef.current = false;
@@ -667,17 +796,23 @@ await Promise.all(
 
     setSendingMessage(true);
 
+    // Extract mentioned user IDs
+    const mentionIds = mentionedUsers.map((u) => u._id);
+    console.log("MENTION IDSSSSSSSSSSSSSS : ", mentionIds)
+
     socketService.sendMessage(
       selectedChat._id,
       user._id,
       messageInput,
       "text",
       null,
-      replyingTo?._id
+      replyingTo?._id,
+      mentionIds.length > 0 ? mentionIds : undefined
     );
 
     setMessageInput("");
     setReplyingTo(null);
+    setMentionedUsers([]);
     socketService.sendStopTyping(selectedChat._id, user._id);
 
     if (typingTimeoutRef.current) {
@@ -720,7 +855,6 @@ await Promise.all(
         return newMap;
       });
 
-      // Initialize cursor and hasMore for new chat
       setCursors((prev) => {
         const newMap = new Map(prev);
         newMap.set(newChat._id, null);
@@ -754,7 +888,6 @@ await Promise.all(
         return newMap;
       });
 
-      // Initialize cursor and hasMore for new group
       setCursors((prev) => {
         const newMap = new Map(prev);
         newMap.set(newChat._id, null);
@@ -824,19 +957,20 @@ await Promise.all(
 
   const handleOpenRepository = () => {
     if (selectedChat?.Repository?._id) {
-      navigate(`/files/${selectedChat.Repository._id}`);
+      window.open(`/files/${selectedChat.Repository._id}`, "_blank");
     }
   };
 
   const handleFileMessageClick = () => {
-    handleOpenRepository();
+    if (selectedChat?.Repository?._id) {
+      window.open(`/files/${selectedChat.Repository._id}`, "_blank");
+    }
   };
 
   // ============================================================================
   // EFFECTS
   // ============================================================================
 
-  // Initialize socket and load data
   useEffect(() => {
     if (!userId || dataLoadedRef.current) return;
 
@@ -857,7 +991,9 @@ await Promise.all(
 
     return () => {
       clearTimeout(requestOnlineStatusTimer);
-      typingClearTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+      typingClearTimeoutsRef.current.forEach((timeout) =>
+        clearTimeout(timeout)
+      );
       typingClearTimeoutsRef.current.clear();
       socketService.cleanup();
       disconnectSocket();
@@ -865,7 +1001,6 @@ await Promise.all(
     };
   }, [userId]);
 
-  // Join chat rooms
   useEffect(() => {
     if (!socketRef.current || chats.length === 0) return;
 
@@ -878,7 +1013,6 @@ await Promise.all(
     });
   }, [chats]);
 
-  // Setup socket listeners
   useEffect(() => {
     if (!socketRef.current || !userId) return;
 
@@ -909,7 +1043,6 @@ await Promise.all(
     };
   }, [selectedChat, userId, user, chats]);
 
-  // Upload progress listeners
   useEffect(() => {
     const handleShowProgress = (e) => {
       setUploadProgress(e.detail.files);
@@ -944,7 +1077,6 @@ await Promise.all(
     };
   }, []);
 
-  // Attach scroll listener to message container
   useEffect(() => {
     const container = messageContainerRef.current;
     if (!container || !selectedChat) {
@@ -954,30 +1086,31 @@ await Promise.all(
     console.log("✅ Attaching scroll listener to chat:", selectedChat._id);
 
     const handleScroll = () => {
-      // Don't trigger pagination during chat switching or initial load
       if (chatSwitchingRef.current || isInitialScrollRef.current) {
         console.log("⏸️ Skipping scroll handler (switching or initial)");
         return;
       }
 
       const scrollTop = container.scrollTop;
-      const threshold = 100; // pixels from top to trigger load
+      const threshold = 100;
 
-      // Check if user scrolled near the top
-      if (scrollTop < threshold && !loadingOlderMessages && hasMoreMessages.get(selectedChat._id)) {
+      if (
+        scrollTop < threshold &&
+        !loadingOlderMessages &&
+        hasMoreMessages.get(selectedChat._id)
+      ) {
         console.log("🔄 Triggering load older messages");
         loadOlderMessages(selectedChat._id);
       }
     };
 
     container.addEventListener("scroll", handleScroll);
-    
-    // Clear the initial scroll flag after a delay
+
     const timer = setTimeout(() => {
       isInitialScrollRef.current = false;
       console.log("✅ Initial scroll flag cleared");
     }, 500);
-    
+
     return () => {
       clearTimeout(timer);
       container.removeEventListener("scroll", handleScroll);
@@ -1012,6 +1145,11 @@ await Promise.all(
       </div>
     );
   }
+
+  const otherUser =
+    selectedChat && !selectedChat.isGroupChat
+      ? selectedChat.users?.find((u) => u._id !== user._id)
+      : null;
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -1057,13 +1195,12 @@ await Promise.all(
         onRemoveMember={handleRemoveMember}
       />
 
-      {uploadProgress.length > 0 && <UploadProgressToast files={uploadProgress} />}
-
       {/* Sidebar */}
       <ChatSidebar
         filteredChats={filteredChats}
         selectedChat={selectedChat}
         unreadMessages={unreadMessages}
+        unreadMentions={unreadMentions}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setShowNewChat={setShowNewChat}
@@ -1083,18 +1220,30 @@ await Promise.all(
             <div className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
+                  className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center text-white font-semibold ${
                     selectedChat.isGroupChat ? "bg-purple-500" : "bg-blue-500"
                   }`}
                 >
                   {selectedChat.isGroupChat ? (
                     <Users className="w-5 h-5" />
+                  ) : otherUser?.profile_picture_url ? (
+                    <img
+                      src={otherUser.profile_picture_url}
+                      alt={otherUser.name}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
                   ) : (
-                    getChatName(selectedChat).charAt(0).toUpperCase()
+                    <span>{otherUser?.name?.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
                 <div>
-                  <h2 className="font-semibold text-gray-900">{getChatName(selectedChat)}</h2>
+                  <h2 className="font-semibold text-gray-900">
+                    {getChatName(selectedChat)}
+                  </h2>
                   <p className="text-xs text-gray-500">
                     {getTypingText() ||
                       (selectedChat.isGroupChat
@@ -1134,7 +1283,9 @@ await Promise.all(
                 <div className="absolute top-0 left-0 right-0 z-10 flex justify-center py-2 bg-gradient-to-b from-gray-50 to-transparent">
                   <div className="bg-white shadow-md rounded-full px-4 py-2 flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-gray-600">Loading older messages...</span>
+                    <span className="text-sm text-gray-600">
+                      Loading older messages...
+                    </span>
                   </div>
                 </div>
               )}
@@ -1151,6 +1302,7 @@ await Promise.all(
                 formatTime={formatTime}
                 formatFileSize={formatFileSize}
                 getTypingText={getTypingText}
+                handleMentionClick={handleMentionClick}
               />
             </div>
 
@@ -1165,7 +1317,9 @@ await Promise.all(
                         Replying to {replyingTo.sender.name}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 truncate">{replyingTo.message}</p>
+                    <p className="text-sm text-gray-600 truncate">
+                      {replyingTo.message}
+                    </p>
                   </div>
                   <button
                     onClick={() => setReplyingTo(null)}
@@ -1173,6 +1327,30 @@ await Promise.all(
                   >
                     <X className="w-4 h-4 text-gray-500" />
                   </button>
+                </div>
+              )}
+
+              {/* Show mentioned users */}
+              {mentionedUsers.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {mentionedUsers.map((user) => (
+                    <div
+                      key={user._id}
+                      className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm flex items-center gap-2"
+                    >
+                      <span>@{user.name}</span>
+                      <button
+                        onClick={() =>
+                          setMentionedUsers((prev) =>
+                            prev.filter((u) => u._id !== user._id)
+                          )
+                        }
+                        className="hover:bg-blue-200 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -1187,23 +1365,22 @@ await Promise.all(
                   </button>
                 )}
 
-                <div className="flex-1 relative">
-                  <textarea
-                    id="message-input"
-                    value={messageInput}
-                    onChange={handleTyping}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder="Type a message..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows="1"
-                    style={{ minHeight: "40px", maxHeight: "120px" }}
-                  />
-                </div>
+                <MentionInput
+                  value={messageInput}
+                  onChange={handleTyping}
+                  onMentionSelect={handleMentionSelect}
+                  availableUsers={selectedChat.users || []}
+                  currentUserId={user?._id}
+                  placeholder="Type a message..."
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  disabled={sendingMessage}
+                  isGroupChat={selectedChat.isGroupChat}
+                />
 
                 <button
                   onClick={handleSendMessage}
@@ -1224,7 +1401,8 @@ await Promise.all(
             <MessageSquare className="w-20 h-20 mb-4 text-gray-300" />
             <h2 className="text-xl font-semibold mb-2">Welcome to Messages</h2>
             <p className="text-center max-w-md">
-              Select a conversation from the sidebar or start a new chat to begin messaging
+              Select a conversation from the sidebar or start a new chat to
+              begin messaging
             </p>
           </div>
         )}
@@ -1272,6 +1450,20 @@ await Promise.all(
         removeToast={removeToast}
         onToastClick={handleToastClick}
       />
+      {uploadProgress.length > 0 && (
+        <div
+          className="fixed z-[9999] space-y-3 max-w-sm w-full"
+          style={{
+            top: "1rem",
+            right: "1rem",
+            bottom: "auto",
+            left: "auto",
+            transform: "none",
+          }}
+        >
+          <UploadProgressToast files={uploadProgress} />
+        </div>
+      )}
     </div>
   );
 };

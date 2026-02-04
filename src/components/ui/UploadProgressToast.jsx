@@ -9,7 +9,7 @@ const formatFileSize = (bytes) => {
 
 export default function UploadProgressToast({ files }) {
   return (
-    <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm w-full z-50">
+    <div className="fixed top-4 right-4 bg-white rounded-lg shadow-lg border border-gray-200 p-4 max-w-sm w-full z-50">
       <div className="flex items-center gap-2 mb-3">
         <Upload className="w-5 h-5 text-blue-500" />
         <h3 className="font-semibold text-gray-900">Uploading Files</h3>

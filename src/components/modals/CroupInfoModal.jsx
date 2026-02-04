@@ -16,7 +16,7 @@ const GroupInfoModal = ({ isOpen, onClose, chat, currentUserId, allUsers, onUpda
   const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  useEffect(() => {
+  useEffect(() => { 
     if (chat) {
       setGroupName(chat.chatName || '');
     }

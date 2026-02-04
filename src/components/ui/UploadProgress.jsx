@@ -86,7 +86,7 @@ export default function UploadProgressToast() {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-[9999] space-y-3 max-w-sm w-full">
+    <div className="fixed top-0 right-0 z-[9999] space-y-3 max-w-sm w-full">
       {/* Active Uploads */}
       {uploads.map((upload) => {
         const overallProgress = getOverallProgress(upload);
@@ -94,7 +94,7 @@ export default function UploadProgressToast() {
         return (
           <div
             key={upload.id}
-            className="bg-white rounded-lg shadow-lg border border-gray-200 p-4 animate-slide-in"
+            className="bg-white top-4 right-4 fixed rounded-lg shadow-lg border border-gray-200 p-4 animate-slide-in"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">

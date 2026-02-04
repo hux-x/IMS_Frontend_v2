@@ -1,7 +1,6 @@
 import React from 'react';
-import { MessageSquare, FileText, Download, Check, CheckCheck, Reply } from 'lucide-react';
-import TypingIndicator from './TypingIndicator'; // make sure you have this component
-
+import { MessageSquare, FileText, Download, Check, CheckCheck, Reply, AtSign } from 'lucide-react';
+import TypingIndicator from './TypingIndicator';
 
 const ChatMessages = ({
   messages,
@@ -15,7 +14,97 @@ const ChatMessages = ({
   formatTime,
   formatFileSize,
   getTypingText,
+  handleMentionClick,
 }) => {
+  console.log("the actual messagesssssssssssss", messages);
+
+  // Helper function to render message text with clickable mentions
+  const renderMessageWithMentions = (message) => {
+    // Support both 'mention' and 'mentions' field names
+    const mentions = message.mention || message.mentions || [];
+    
+    if (mentions.length === 0) {
+      return <p className="break-words">{message.message}</p>;
+    }
+
+    // Create a regex pattern to find all @mentions in the text
+    const parts = [];
+    let lastIndex = 0;
+    const text = message.message;
+
+    // Find all @mentions and their positions
+    mentions.forEach((mentionedUser) => {
+      const mentionText = `@${mentionedUser.name}`;
+      const index = text.indexOf(mentionText, lastIndex);
+
+      if (index !== -1) {
+        // Add text before mention
+        if (index > lastIndex) {
+          parts.push({
+            type: 'text',
+            content: text.substring(lastIndex, index),
+          });
+        }
+
+        // Add mention
+        parts.push({
+          type: 'mention',
+          content: mentionText,
+          user: mentionedUser,
+        });
+
+        lastIndex = index + mentionText.length;
+      }
+    });
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'text',
+        content: text.substring(lastIndex),
+      });
+    }
+
+    const isOwn = message?.sender?._id === user?._id;
+
+    return (
+      <p className="break-words">
+        {parts.map((part, index) => {
+          if (part.type === 'mention') {
+            return (
+              <span
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMentionClick(part.user);
+                }}
+                className={`font-semibold cursor-pointer hover:underline ${
+                  isOwn ? 'text-blue-200' : 'text-blue-600'
+                }`}
+              >
+                {part.content}
+              </span>
+            );
+          }
+          return <span key={index}>{part.content}</span>;
+        })}
+      </p>
+    );
+  };
+
+  // Check if a message mentions the current user (support both field names)
+  const isMentioned = (message) => {
+    return message.mention?.some((m) => m._id === user?._id) ||
+           message.mentions?.some((m) => m._id === user?._id);
+  };
+
+
+// Also update renderMessageWithMentions to check both fields:
+
+
+  // Rest of the function remains the same...
+
+
   return (
     <div 
       ref={messageContainerRef} 
@@ -23,7 +112,7 @@ const ChatMessages = ({
       style={{ 
         maxHeight: '100%',
         overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch' // For smooth scrolling on iOS
+        WebkitOverflowScrolling: 'touch'
       }}
     >
       {messages.length === 0 ? (
@@ -37,17 +126,34 @@ const ChatMessages = ({
           {messages?.map((message, index) => {
             const isOwn = message?.sender?._id === user?._id;
             const showAvatar = index === 0 || messages[index - 1].sender._id !== message.sender._id;
+            const mentioned = isMentioned(message);
 
             return (
               <div
                 key={message._id}
                 id={`message-${message._id}`}
-                className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} transition-all duration-300`}
+                className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''} transition-all duration-300 ${
+                  mentioned ? 'bg-yellow-50 -mx-2 px-2 py-1 rounded-lg' : ''
+                }`}
               >
                 <div className="flex-shrink-0">
                   {showAvatar ? (
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                      {message.sender.name?.charAt(0).toUpperCase()}
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center">
+                      {message.sender?.profile_picture_url ? (
+                        <img
+                          src={message.sender.profile_picture_url}
+                          alt={message.sender.name}
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <span className="text-white text-sm font-semibold">
+                          {message.sender?.name?.charAt(0).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                   ) : (
                     <div className="w-8 h-8"></div>
@@ -71,10 +177,7 @@ const ChatMessages = ({
                           <FileText className={`w-8 h-8 ${isOwn ? 'text-blue-100' : 'text-blue-500'}`} />
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm font-medium truncate ${isOwn ? 'text-white' : 'text-gray-900'}`}>
-                              {message.fileMetadata?.fileName || 'File'}
-                            </p>
-                            <p className={`text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
-                              {message.fileMetadata?.size ? formatFileSize(message.fileMetadata.size) : 'Unknown size'}
+                              {message?.fileName || 'File'}
                             </p>
                           </div>
                           <Download className={`w-5 h-5 flex-shrink-0 ${isOwn ? 'text-blue-100' : 'text-gray-400'}`} />
@@ -86,7 +189,9 @@ const ChatMessages = ({
                         </div>
                       </div>
                     ) : (
-                      <div className={`rounded-2xl px-4 py-2 ${isOwn ? 'bg-blue-500 text-white rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'}`}>
+                      <div className={`rounded-2xl px-4 py-2 ${isOwn ? 'bg-blue-500 text-white rounded-tr-sm' : 'bg-white text-gray-900 rounded-tl-sm'} ${
+                        mentioned ? 'ring-2 ring-yellow-400' : ''
+                      }`}>
                         {message.replyTo && (
                           <div
                             onClick={() => scrollToMessage(message.replyTo._id)}
@@ -101,11 +206,14 @@ const ChatMessages = ({
                           </div>
                         )}
 
-                        <p className="break-words">{message.message}</p>
+                        {renderMessageWithMentions(message)}
 
                         <div className={`flex items-center gap-1 mt-1 text-xs ${isOwn ? 'text-blue-100' : 'text-gray-500'}`}>
                           <span>{formatTime(message.createdAt)}</span>
                           {isOwn && (message.isRead ? <CheckCheck className="w-4 h-4" /> : <Check className="w-4 h-4" />)}
+                          {mentioned && !isOwn && (
+                            <AtSign className="w-3 h-3 ml-1 text-yellow-600" />
+                          )}
                         </div>
                       </div>
                     )}

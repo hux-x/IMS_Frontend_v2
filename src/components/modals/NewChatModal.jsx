@@ -9,7 +9,7 @@ import { ToastContainer } from '@/components/layout/Toast';
 // New Chat Modal Component
 const NewChatModal = ({ isOpen, onClose, allUsers, currentUserId, onStartChat, existingChats }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  
+  console.log(allUsers)
   if (!isOpen) return null;
 
   const availableUsers = allUsers

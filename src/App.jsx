@@ -127,10 +127,10 @@ const GlobalNotifications = () => {
     };
   }, [userId, isOnChatPage, setUnread]);
 
-  const addToast = (message, sender, chatId) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, message, sender, chatId }]);
-  };
+ const addToast = (message, sender, chatId, isMention = false) => {
+  const id = Date.now();
+  setToasts((prev) => [...prev, { id, message, sender, chatId, isMention }]);
+};
 
   const removeToast = (id) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));

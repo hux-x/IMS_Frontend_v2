@@ -96,7 +96,7 @@ const socketService = {
   },
 
   // Send message with reply support
-  sendMessage: (chatId, senderId, message, messageType = 'text', fileData = null, replyToId = null) => {
+  sendMessage: (chatId, senderId, message, messageType = 'text', fileData = null, replyToId = null,mentions) => {
     if (!socket?.connected) {
       console.error('❌ Socket not connected');
       return false;
@@ -111,6 +111,7 @@ const socketService = {
       fileName: fileData?.fileName || null,
       fileSize: fileData?.fileSize || null,
       replyToId: replyToId || null,
+      mentions: mentions || null
     };
 
     console.log('📤 Sending message:', messageData);
